@@ -1,0 +1,363 @@
+C51 COMPILER V9.60.0.0   MAIN                                                              06/05/2023 23:10:08 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: C:\Tools\MDK\C51\BIN\C51.EXE ..\code\main.c OMF2 OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Libary\Device\C
+                    -MS8S6990\Include;..\Libary\StdDriver\inc;..\code) DEBUG PRINT(.\Listings\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          /*******************************************************************************
+   2          * Copyright (C) 2019 China Micro Semiconductor Limited Company. All Rights Reserved.
+   3          *
+   4          * This software is owned and published by:
+   5          * CMS LLC, No 2609-10, Taurus Plaza, TaoyuanRoad, NanshanDistrict, Shenzhen, China.
+   6          *
+   7          * BY DOWNLOADING, INSTALLING OR USING THIS SOFTWARE, YOU AGREE TO BE BOUND
+   8          * BY ALL THE TERMS AND CONDITIONS OF THIS AGREEMENT.
+   9          *
+  10          * This software contains source code for use with CMS
+  11          * components. This software is licensed by CMS to be adapted only
+  12          * for use in systems utilizing CMS components. CMS shall not be
+  13          * responsible for misuse or illegal use of this software for devices not
+  14          * supported herein. CMS is providing this software "AS IS" and will
+  15          * not be responsible for issues arising from incorrect user implementation
+  16          * of the software.
+  17          *
+  18          * This software may be replicated in part or whole for the licensed use,
+  19          * with the restriction that this Disclaimer and Copyright notice must be
+  20          * included with each copy of this software, whether used in part or whole,
+  21          * at all times.
+  22          */
+  23          
+  24          /****************************************************************************/
+  25          /** \file main.c
+  26          **
+  27          **
+  28          ** ³õ°æ 2023Äê01ÔÂ01ÈÕ 21:59:53
+  29          **  History:
+  30          **
+  31          *****************************************************************************/
+  32          /****************************************************************************/
+  33          /*  include files
+  34          *****************************************************************************/
+  35          
+  36          #include "all.h"
+  37          /****************************************************************************/
+  38          /*  Local pre-processor symbols('#define')
+  39          *****************************************************************************/
+  40          extern u8 xdata   BitTimer1ms;
+  41          
+  42          /****************************************************************************/
+  43          /*  Global variable definitions(declared in header file with 'extern')
+  44          È«¾Ö±äÁ¿
+  45          *****************************************************************************/
+  46          u16 xdata     VarTimer100ms;
+  47          u8 xdata    VarTimer500ms ;
+  48          u8 xdata    VarTimer1s;
+  49          u8 xdata    BitTimer10ms;
+  50          u8 xdata    VarTimer10ms;
+  51          u16 xdata VarWirtFlashCnt;
+  52          //
+  53          u8 xdata VarINCnt;        //ÊäÈëÍ¨µÀ
+  54          u8 xdata VarOutCnt;       //Êä³öÍ¨µÀ
+C51 COMPILER V9.60.0.0   MAIN                                                              06/05/2023 23:10:08 PAGE 2   
+
+  55          u8 xdata VarVoiceLevel;   //ÒôÆµµÈ¼¶
+  56          u8 xdata BitVoice_En;     //Ê¹ÄÜ±êÖ¾
+  57          
+  58          u8 xdata SysStatus;       //ÏµÍ³×´Ì¬
+  59          u8 xdata VarAutoSet ;
+  60          //
+  61          u8 xdata BitDataCharg = 0;
+  62          /****************************************************************************/
+  63          /*  Local type definitions('typedef')
+  64          *****************************************************************************/
+  65          
+  66          /****************************************************************************/
+  67          /*  Local variable  definitions('static')
+  68          *****************************************************************************/
+  69          uint32_t Systemclock = 24000000;
+  70          
+  71          /****************************************************************************/
+  72          /*  Local function prototypes('static')
+  73          *****************************************************************************/
+  74          /**************************************************************
+  75          *º¯ÊýÃû³Æ£ºTimeMain
+  76          *º¯Êý¹¦ÄÜ£ºÊ±¼äÀÛ¼Æ  ¿ØÖÆ.
+  77          **************************************************************/
+  78          void TimeMain(void)
+  79          {
+  80   1        VarTimer100ms++;
+  81   1      
+  82   1        if (VarTimer100ms >= 10)
+  83   1          {
+  84   2            VarTimer100ms = 0;                                          //100ms¶¨Ê±.
+  85   2            //
+  86   2          }
+  87   1      
+  88   1        VarTimer500ms++;
+  89   1      
+  90   1        if (VarTimer500ms >= 50)                                         //500ms¶¨Ê±.
+  91   1          {
+  92   2            VarTimer500ms = 0;
+  93   2          }
+  94   1        //
+  95   1        VarTimer1s ++;
+  96   1        if (VarTimer1s >= 200)                                          //1s¼ÆÊ±.
+  97   1          {
+  98   2            VarTimer1s = 0;
+  99   2            //
+ 100   2          }
+ 101   1      
+ 102   1      }
+ 103          /**************************************************************
+ 104          ÀûÓÃ¶¨Ê±Æ÷-ÑÓÊ±×Ó³ÌÐò.
+ 105          ***************************************************************/
+ 106          void Delay10ms(u8 Time)
+ 107          {
+ 108   1        u8 i;
+ 109   1        i = Time;
+ 110   1      
+ 111   1        while(i)
+ 112   1          {
+ 113   2            if (BitTimer10ms)
+ 114   2              {
+ 115   3                // WDTCON |= 0x10;
+ 116   3                BitTimer10ms = 0;
+C51 COMPILER V9.60.0.0   MAIN                                                              06/05/2023 23:10:08 PAGE 3   
+
+ 117   3                i--;
+ 118   3              }
+ 119   2          }
+ 120   1      }
+ 121          /**************************************************
+ 122          *º¯ÊýÃû³Æ£ºvoid TMR0_Config(void)
+ 123          *º¯Êý¹¦ÄÜ£º¶¨Ê±Æ÷TMR0³õÊ¼»¯
+ 124          *Èë¿Ú²ÎÊý£ºvoid
+ 125          *³ö¿Ú²ÎÊý£ºvoid
+ 126          **************************************************/
+ 127          void TMR0_Config(void)
+ 128          {
+ 129   1      
+ 130   1        /*
+ 131   1        (1)ÉèÖÃTimerµÄÔËÐÐÄ£Ê½
+ 132   1        */
+ 133   1        TMR_ConfigRunMode(TMR0, TMR_MODE_TIMING,TMR_TIM_AUTO_8BIT);
+ 134   1        /*
+ 135   1        (2)ÉèÖÃTimer ÔËÐÐÊ±ÖÓ
+ 136   1        */
+ 137   1        //  /*Fsys = 12Mhz£¬Ftimer = 1Mhz,Ttmr= 1us*/
+ 138   1        TMR_ConfigTimerClk(TMR0, TMR_CLK_DIV_12);           /*Fsys = 24Mhz£¬Ftimer = 2Mhz,Ttmr=0.5us*/
+ 139   1        /*
+ 140   1        (3)ÉèÖÃTimerÖÜÆÚ
+ 141   1        */
+ 142   1        TMR_ConfigTimerPeriod(TMR0, 256-200, 256-200);        // 200*0.5us = 100us,µÝÔö¼ÆÊý
+ 143   1        //TMR_ConfigTimerPeriod(TMR0, 256-100, 256-100);          //100*1us = 100us
+ 144   1        /*
+ 145   1        (4)¿ªÆôÖÐ¶Ï
+ 146   1        */
+ 147   1        TMR_EnableOverflowInt(TMR0);
+ 148   1      
+ 149   1        /*
+ 150   1        (5)ÉèÖÃTimerÖÐ¶ÏÓÅÏÈ¼¶
+ 151   1        */
+ 152   1        IRQ_SET_PRIORITY(IRQ_TMR0,IRQ_PRIORITY_LOW);
+ 153   1        //IRQ_ALL_ENABLE();
+ 154   1      
+ 155   1        /*
+ 156   1        (6)¿ªÆôTimer
+ 157   1        */
+ 158   1        TMR_Start(TMR0);
+ 159   1      }
+ 160          /******************************************************************************
+ 161           ** \brief   WDT_Config
+ 162           ** \param [in]
+ 163           **
+ 164           ** \return  none
+ 165           ** \note
+ 166           ******************************************************************************/
+ 167          void WDT_Config(void)
+ 168          {
+ 169   1        /*
+ 170   1        (1)Î¹¹·£¬±ÜÃâWDTÊ±¼äÌ«¶Ì£¬½øÈëWDT¸´Î»
+ 171   1        */
+ 172   1        WDT_ClearWDT();
+ 173   1        /*
+ 174   1        (2)¿ªÆôWDTÒç³öÊ±¼ä
+ 175   1        */
+ 176   1        WDT_ConfigOverflowTime(WDT_CLK_4194304);  // Fsys=24Mhz -> Twdt = 4194304/24 = 174.76ms
+ 177   1        /*
+ 178   1        (3)ÉèÖÃWDTÒç³öÖÐ¶Ï
+C51 COMPILER V9.60.0.0   MAIN                                                              06/05/2023 23:10:08 PAGE 4   
+
+ 179   1        */
+ 180   1        //WDT_EnableOverflowInt();
+ 181   1      
+ 182   1        //IRQ_SET_PRIORITY(IRQ_WDT, IRQ_PRIORITY_HIGH);
+ 183   1        //IRQ_ALL_ENABLE();
+ 184   1      
+ 185   1      }
+ 186          /****************************************************************************/
+ 187          /*  Function implementation - global ('extern') and local('static')
+ 188          *****************************************************************************/
+ 189          
+ 190          /*****************************************************************************
+ 191           ** \brief   main
+ 192           **
+ 193           ** \param [in]  none
+ 194           **
+ 195           ** \return 0
+ 196           *****************************************************************************/
+ 197          
+ 198          int main(void)
+ 199          {
+ 200   1      //  u8 i,Vartemp;
+ 201   1        //
+ 202   1        TMR0_Config();        //¶¨Ê±Æ÷³õÊ¼»¯
+ 203   1        //
+ 204   1        encoder_init();       //±àÂëÆ÷³õÊ¼»¯
+ 205   1        init_TM1620();        //ÏÔÊ¾
+ 206   1        adc_config();         //adc³õÊ¼»¯
+ 207   1        IR_Init();            //IR³õÊ¼»¯
+ 208   1        //
+ 209   1        mt_init();            //Âí´ïÇý¶¯
+ 210   1        out_init();           //ÊäÈëÊä³öÍ¨µÀÉèÖÃ
+ 211   1        //
+ 212   1        //FLASH_Erase(FLASH_DATA,0);//²Á³ýÊý¾Ý
+ 213   1        //FLASH_Erase(FLASH_DATA,1);
+ 214   1        //FLASH_Erase(FLASH_DATA,2);
+ 215   1        //FLASH_Erase(FLASH_DATA,3);
+ 216   1        //FLASH_Erase(FLASH_DATA,4);
+ 217   1        //First_ReadData();     //¶ÁÈ¡±£´æÊý¾Ý
+ 218   1        //
+ 219   1      // WDT_Config();
+ 220   1        //
+ 221   1        EA =1;                //¿ªÆôÈ«¾ÖÖÐ¶Ï
+ 222   1        //led_show();         //ÏÔÊ¾²âÊÔ
+ 223   1        SysStatus = 0;        //ÏÔÊ¾dly  --3 µ¹¼ÆÊ±
+ 224   1        VarAutoSet = 3;       //
+ 225   1        BitDisplayOn = 1;     //
+ 226   1        BitVoiceMute = 0;     //ÒôÁ¿¾²Òô±êÖ¾
+ 227   1        //
+ 228   1        //VarVoiceLevel = 14;
+ 229   1        //save_VoiceLevel();
+ 230   1        //
+ 231   1        while(1)
+ 232   1          {
+ 233   2      #if 1
+ 234   2            // WDT_ClearWDT();                  //¿´ÃÅ¹·Î¹¹·
+ 235   2            //
+ 236   2            if(SysStatus)                       //ÏµÍ³Æô¶¯ºó²ÅÉ¨Ãè±àÂëÆ÷
+ 237   2              {
+ 238   3                encoder_a();                    //Ðý×ª±àÂëÆ÷
+ 239   3                encoder_b();
+ 240   3              }
+C51 COMPILER V9.60.0.0   MAIN                                                              06/05/2023 23:10:08 PAGE 5   
+
+ 241   2            //
+ 242   2            if(BitTimer1ms)                     //1ms--¶¨Ê±Ê±»ù
+ 243   2              {
+ 244   3                BitTimer1ms = 0;
+ 245   3                //
+ 246   3                display();                      //ÏÔÊ¾Ë¢ÐÂ
+ 247   3                //
+ 248   3                switch(SysStatus)               //ÏµÍ³×´Ì¬
+ 249   3                  {
+ 250   4                  case 0:
+ 251   4                    auto_countdown();           //µ¹¼ÆÊ±
+ 252   4                    break;
+ 253   4                  case 1:
+ 254   4                    if(++VarTimer10ms >= 10)    //10ms
+ 255   4                      {
+ 256   5                        BitTimer10ms = 1;
+ 257   5                        VarTimer10ms = 0;
+ 258   5                        Scan_encodeer_a();      //¶ÀÁ¢°´¼ü
+ 259   5                        Scan_encodeer_b();
+ 260   5                        //
+ 261   5                        out_ctrl();             //ÊäÈëÊä³ö¿ØÖÆ
+ 262   5                        Mute_ctrl();            //¾²Òô¿ØÖÆ--Ä¬ÈÏ¹Ø±Õ
+ 263   5                        //
+ 264   5                        mt_ctrl();              //Âí´ï¿ØÖÆ
+ 265   5                        //
+ 266   5                        VoiceLevelBack_Ctrl();  //¿ØÖÆ·µ»Ø³õÊ¼Öµ
+ 267   5                        //
+ 268   5                        IRReceiveCTRL();        //ºìÍâ½ÓÊÕ´¦Àí
+ 269   5                      }
+ 270   4                    if((++VarWirtFlashCnt >= 500 ) && BitDataCharg)   //10ms*1000  ÇÒÊý¾ÝÓÐ±ä»¯²Å½øÐÐ¸üÐÂ
+ 271   4                      {
+ 272   5                        VarWirtFlashCnt = 0;
+ 273   5                        BitDataCharg = 0;
+ 274   5                        //
+ 275   5                        FLASH_UnLock();           //½âËø
+ 276   5                        FLASH_Erase(FLASH_DATA,0);//²Á³ý¶ÔÓ¦ËùÔÚÕâÒ»Ò³
+ 277   5                        //for(i = 0 ;i< 3 ;i++)   //Á¬Ðø256 bytesµÄÐ´µÈ´ýFlashÖ´ÐÐÍê³É
+ 278   5                        //{
+ 279   5                        //  FLASH_Write(FLASH_DATA,0x4, 0xFF); //Ð´µØÖ·Ê¹ÓÃ×îºóµÄµØÖ·(ÈÎÒâµØÖ·¶¼¿ÉÒÔ£¬½¨ÒéÓÃÊ¹ÓÃ½
+             -ÏÉÙµÄµØÖ·)
+ 280   5                        //}
+ 281   5                        FLASH_Write(FLASH_DATA,0x0, 0x55);      //Ð´Èë±êÖ¾
+ 282   5                        //Vartemp = FLASH_Read(FLASH_DATA,0x0);
+ 283   5                        FLASH_Write(FLASH_DATA,0x1, 0x2a);
+ 284   5                        //Vartemp = FLASH_Read(FLASH_DATA,0x1);
+ 285   5                        //
+ 286   5                        FLASH_Write(FLASH_DATA,0x2, VarINCnt);  //Ð´Èë³õÊ¼Êý¾Ý
+ 287   5                        //Vartemp = FLASH_Read(FLASH_DATA,0x2);
+ 288   5                        FLASH_Write(FLASH_DATA,0x3, VarOutCnt);
+ 289   5                        //Vartemp = FLASH_Read(FLASH_DATA,0x3);
+ 290   5                        FLASH_Write(FLASH_DATA,0x4, VarVoiceLevel);
+ 291   5                        //Vartemp = FLASH_Read(FLASH_DATA,0x4);
+ 292   5                        //
+ 293   5                        FLASH_Lock();           //Ëø
+ 294   5                      }
+ 295   4                    break;
+ 296   4                  default:
+ 297   4                    break;
+ 298   4                  }
+ 299   3              }
+ 300   2      #endif
+ 301   2          }
+C51 COMPILER V9.60.0.0   MAIN                                                              06/05/2023 23:10:08 PAGE 6   
+
+ 302   1      }
+ 303          
+ 304          
+ 305          
+ 306          
+ 307          
+ 308          
+ 309          
+ 310          
+ 311          
+ 312          
+ 313          
+ 314          
+ 315          
+ 316          
+ 317          
+ 318          
+ 319          
+ 320          
+ 321          
+ 322          
+ 323          
+ 324          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    370    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     15    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      4    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

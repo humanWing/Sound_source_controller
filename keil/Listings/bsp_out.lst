@@ -1,0 +1,202 @@
+C51 COMPILER V9.60.0.0   BSP_OUT                                                           06/05/2023 23:10:09 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE BSP_OUT
+OBJECT MODULE PLACED IN .\Objects\bsp_out.obj
+COMPILER INVOKED BY: C:\Tools\MDK\C51\BIN\C51.EXE ..\code\bsp_out.c OMF2 OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Libary\Devic
+                    -e\CMS8S6990\Include;..\Libary\StdDriver\inc;..\code) DEBUG PRINT(.\Listings\bsp_out.lst) TABS(2) OBJECT(.\Objects\bsp_ou
+                    -t.obj)
+
+line level    source
+
+   1          /*
+   2          *********************************************************************************************************
+   3          *
+   4          * 模块名称 :
+   5          * 文件名称 : bsp_out.c
+   6          * 版    本 : V1.0
+   7          * 说    明 :
+   8          *
+   9          * 修改记录 :
+  10          *   版本号  日期         作者     说明
+  11          *
+  12          *********************************************************************************************************
+  13          */
+  14          #include "all.h"
+  15          
+  16          //控制ULN2003 达林顿管   H-打开   L-关闭
+  17          //定义IO口  2进4出
+  18          sbit   IN_1 = P2^3;           //定义
+  19          sbit   IN_2 = P2^2;           //定义
+  20          //
+  21          sbit   OUT_1 = P1^6;            //定义
+  22          sbit   OUT_2 = P1^5;            //定义
+  23          sbit   OUT_3 = P1^4;            //定义
+  24          sbit   OUT_4 = P1^3;            //定义
+  25          
+  26          sbit   MUTE =  P1^7;            //静音控制  H 静音  L无效
+  27          
+  28          
+  29          /*
+  30          *********************************************************************************************************
+  31          * 函 数 名: out_init
+  32          * 功能说明: 配置IO
+  33          * 形    参: 无
+  34          * 返 回 值: 无
+  35          *********************************************************************************************************
+  36          */
+  37          void out_init(void)
+  38          {
+  39   1        //
+  40   1        IN_1 = 0;
+  41   1        IN_2 = 0;
+  42   1        OUT_1 = 0;
+  43   1        OUT_2 = 0;
+  44   1        OUT_3 = 0;
+  45   1        OUT_4 = 0;
+  46   1        //
+  47   1        MUTE = 0;
+  48   1        //
+  49   1        GPIO_SET_MUX_MODE(P23CFG, GPIO_MUX_GPIO);
+  50   1        GPIO_ENABLE_OUTPUT(P2TRIS, GPIO_PIN_3);
+  51   1      
+  52   1        GPIO_SET_MUX_MODE(P22CFG, GPIO_MUX_GPIO);
+  53   1        GPIO_ENABLE_OUTPUT(P2TRIS, GPIO_PIN_2);
+C51 COMPILER V9.60.0.0   BSP_OUT                                                           06/05/2023 23:10:09 PAGE 2   
+
+  54   1        //
+  55   1        GPIO_SET_MUX_MODE(P16CFG, GPIO_MUX_GPIO);
+  56   1        GPIO_ENABLE_OUTPUT(P1TRIS, GPIO_PIN_6);
+  57   1      
+  58   1        GPIO_SET_MUX_MODE(P15CFG, GPIO_MUX_GPIO);
+  59   1        GPIO_ENABLE_OUTPUT(P1TRIS, GPIO_PIN_5);
+  60   1      
+  61   1        GPIO_SET_MUX_MODE(P14CFG, GPIO_MUX_GPIO);
+  62   1        GPIO_ENABLE_OUTPUT(P1TRIS, GPIO_PIN_4);
+  63   1      
+  64   1        GPIO_SET_MUX_MODE(P13CFG, GPIO_MUX_GPIO);
+  65   1        GPIO_ENABLE_OUTPUT(P1TRIS, GPIO_PIN_3);
+  66   1        //
+  67   1      
+  68   1        GPIO_SET_MUX_MODE(P17CFG, GPIO_MUX_GPIO);
+  69   1        GPIO_ENABLE_OUTPUT(P1TRIS, GPIO_PIN_7);
+  70   1      //
+  71   1      }
+  72          
+  73          
+  74          /*
+  75          *********************************************************************************************************
+  76          * 函 数 名: out_ctrl
+  77          * 功能说明: 根据设定值，来进行打开关闭输入 输出
+  78          * 形    参: 无
+  79          * 返 回 值: 无
+  80          *********************************************************************************************************
+  81          */
+  82          void out_ctrl()
+  83          {
+  84   1        if(BitDisplayOn  &&  (!BitVoiceMute))   //开启状态下进入
+  85   1          {
+  86   2            //输入通道控制
+  87   2            if(VarINCnt == 1)
+  88   2              {
+  89   3                IN_1 = 1;
+  90   3                IN_2 = 0;
+  91   3              }
+  92   2            else if(VarINCnt == 2)
+  93   2              {
+  94   3                IN_2 = 1;
+  95   3                IN_1 = 0;
+  96   3              }
+  97   2            //输出通道控制
+  98   2              //add :  选择那组通道，其他组关闭
+  99   2            switch(VarOutCnt)
+ 100   2              {
+ 101   3              case 1:
+ 102   3                OUT_1 = 1;
+ 103   3                OUT_2 = 0;
+ 104   3                OUT_3 = 0;
+ 105   3                OUT_4 = 0;
+ 106   3                break;
+ 107   3      
+ 108   3              case 2:
+ 109   3                OUT_1 = 0;
+ 110   3                OUT_2 = 1;
+ 111   3                OUT_3 = 0;
+ 112   3                OUT_4 = 0;
+ 113   3                break;
+ 114   3      
+ 115   3              case 3:
+C51 COMPILER V9.60.0.0   BSP_OUT                                                           06/05/2023 23:10:09 PAGE 3   
+
+ 116   3                OUT_1 = 0;
+ 117   3                OUT_2 = 0;
+ 118   3                OUT_3 = 1;
+ 119   3                OUT_4 = 0;
+ 120   3                break;
+ 121   3              case 4:
+ 122   3                OUT_1 = 0;
+ 123   3                OUT_2 = 0;
+ 124   3                OUT_3 = 0;
+ 125   3                OUT_4 = 1;
+ 126   3                break;
+ 127   3              }
+ 128   2            //
+ 129   2          }
+ 130   1        else
+ 131   1          {
+ 132   2            OUT_1 = 0;          //关闭
+ 133   2            OUT_2 = 0;
+ 134   2            OUT_3 = 0;
+ 135   2            OUT_4 = 0;
+ 136   2            //
+ 137   2            IN_1 = 0;
+ 138   2            IN_2 = 0;
+ 139   2          }
+ 140   1      }
+ 141          
+ 142          /*
+ 143          *********************************************************************************************************
+ 144          * 函 数 名: Mute_ctrl
+ 145          * 功能说明: 根据设定值，打开/关闭静音
+ 146          * 形    参: 无
+ 147          * 返 回 值: 无
+ 148          *********************************************************************************************************
+ 149          */
+ 150          void Mute_ctrl(void)
+ 151          {
+ 152   1        if(BitDisplayOn)
+ 153   1          {
+ 154   2            if(BitVoiceMute)    //静音标志
+ 155   2              {
+ 156   3                MUTE = 1;       //禁用
+ 157   3              }
+ 158   2            else
+ 159   2              {
+ 160   3                MUTE = 0;       //打开
+ 161   3              }
+ 162   2          }
+ 163   1        else
+ 164   1          {
+ 165   2            MUTE = 1;           //禁用
+ 166   2          }
+ 167   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    177    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+C51 COMPILER V9.60.0.0   BSP_OUT                                                           06/05/2023 23:10:09 PAGE 4   
+
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

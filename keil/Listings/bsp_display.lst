@@ -1,0 +1,29 @@
+C51 COMPILER V9.60.0.0   BSP_DISPLAY                                                       01/07/2023 14:18:16 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE BSP_DISPLAY
+OBJECT MODULE PLACED IN .\Objects\bsp_display.obj
+COMPILER INVOKED BY: C:\Tools\MDK\C51\BIN\C51.EXE ..\code\bsp_display.c OMF2 OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Libary\D
+                    -evice\CMS8S6990\Include;..\Libary\StdDriver\inc;..\code) DEBUG PRINT(.\Listings\bsp_display.lst) TABS(2) OBJECT(.\Object
+                    -s\bsp_display.obj)
+
+line level    source
+
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,463 @@
+C51 COMPILER V9.60.0.0   BSP_1620                                                          06/05/2023 23:10:08 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE BSP_1620
+OBJECT MODULE PLACED IN .\Objects\bsp_1620.obj
+COMPILER INVOKED BY: C:\Tools\MDK\C51\BIN\C51.EXE ..\code\bsp_1620.c OMF2 OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Libary\Devi
+                    -ce\CMS8S6990\Include;..\Libary\StdDriver\inc;..\code) DEBUG PRINT(.\Listings\bsp_1620.lst) TABS(2) OBJECT(.\Objects\bsp_
+                    -1620.obj)
+
+line level    source
+
+   1          /*
+   2          *********************************************************************************************************
+   3          *
+   4          * 模块名称 :
+   5          * 文件名称 : bsp_display.c
+   6          * 版    本 : V1.0
+   7          * 说    明 : 控制输出显示
+   8          *
+   9          * 修改记录 :
+  10          *   版本号  日期         作者     说明
+  11          *
+  12          *********************************************************************************************************
+  13          */
+  14          
+  15          #include "all.h"
+  16          
+  17          extern u16 xdata    VarTimer100ms;
+  18          u8 bai_num,shi_num,ge_num;
+  19          static u8 code LED_tab[14]=   // 定义数码管0~9数字码表
+  20          {
+  21            0x3f,    //0
+  22            0x06,
+  23            0x5b,
+  24            0x4f,
+  25            0x66,
+  26            0x6d,
+  27            0x7d,
+  28            0x07,
+  29            0x7f,
+  30            0x6f,    //9
+  31            0x5e,   //d 10
+  32            0x30,   //l 11
+  33            0x6e,   //y 12
+  34            0x40,   //- 13
+  35          };
+  36          #define dissetmode      0x02 //显示模式设置 6位8段显示
+  37          #define writedatamode_z 0x40 //自动加一方式显存 写数据到显示寄存器
+  38          #define writeledmode_z  0x41 //自动加一方式写LED显存命令
+  39          #define readkeymode     0x42 //读按键命令
+  40          #define readswmode      0x43 //读SW命令
+  41          #define writedatamode_g   0x44    //固定模式
+  42          //
+  43          #define startaddress    0xc0 //自动加1显示的起始地址设置，为00H
+  44          #define disconmode      0x8a//0x8F //显示控制，显示开
+  45          #define discommode_off  0x87 //显示控制，显示关闭
+  46          bit   BitDisplayOn;               //显示变量
+  47          u8 TmData;
+  48          xdata u8 TM1620_temp[6] = {0};
+  49          
+  50          xdata u16 VarAutoTimeCnt;
+  51          
+  52          extern u8 xdata   BitTime100us;
+  53          u8 VarDisplayUpdateCnt = 0;
+C51 COMPILER V9.60.0.0   BSP_1620                                                          06/05/2023 23:10:08 PAGE 2   
+
+  54          //*************************************
+  55          // 函数名称：delay_ms
+  56          // 函数功能：延迟
+  57          // 入口参数：要操作的数据
+  58          // 出口参数：无
+  59          //***************************************/
+  60          void delay_ms(u8 cyc)
+  61          {
+  62   1        u8 ii,jj;
+  63   1      
+  64   1        for(jj=1; jj<=cyc; jj++)
+  65   1          {
+  66   2            for(ii=0; ii<150; ii++)
+  67   2              {
+  68   3                _nop_();
+  69   3              }
+  70   2          }
+  71   1      }
+  72          void TimeDelay_us(u8 Time)
+  73          {
+  74   1        u8 i;
+  75   1        i = Time;
+  76   1        //
+  77   1        while(i)
+  78   1          {
+  79   2            if (BitTime100us)
+  80   2              {
+  81   3      
+  82   3                BitTime100us = 0;
+  83   3                i--;
+  84   3              }
+  85   2          }
+  86   1      }
+  87          
+  88          //*************************************
+  89          // 函数名称：TM1620_Write
+  90          // 函数功能：向TM1620发数据 8位数据-1个字节的数据
+  91          // 入口参数：要操作的数据
+  92          // 出口参数：无
+  93          // 技术简要：上升沿操作一位 从低位开始操作数据
+  94          //***************************************/
+  95          void TM1620_Write(u8 wr_data)
+  96          {
+  97   1        u8 i;
+  98   1        for(i=0; i<8; i++)        //开始传送8位数据，每循环一次传送一位数据
+  99   1          {
+ 100   2            CLK = 0;
+ 101   2            if(wr_data&0x01)
+ 102   2              {
+ 103   3                DIO = 1;
+ 104   3              }
+ 105   2            else
+ 106   2              {
+ 107   3                DIO = 0;
+ 108   3              }
+ 109   2            //TimeDelay_us(10);           //主频速度24MHZ  速度太快了，要延迟下
+ 110   2            delay_ms(10);
+ 111   2            CLK = 1;
+ 112   2            //TimeDelay_us(10);
+ 113   2            delay_ms(10);
+ 114   2            wr_data>>=1;            //移位数据  低位在前
+ 115   2          }
+C51 COMPILER V9.60.0.0   BSP_1620                                                          06/05/2023 23:10:08 PAGE 3   
+
+ 116   1      }
+ 117          //*************************************
+ 118          // 函数名称：Write_COM
+ 119          // 函数功能：向TM1620发送命令字
+ 120          // 入口参数：要操作的数据
+ 121          // 出口参数：无
+ 122          // 技术简要：上升沿操作一位 从低位开始操作数据
+ 123          //***************************************/
+ 124          void Write_COM(unsigned char cmd)//
+ 125          {
+ 126   1        STB = 1;
+ 127   1        //TimeDelay_us(10);
+ 128   1        delay_ms(10);
+ 129   1        STB = 0;
+ 130   1        TM1620_Write(cmd);
+ 131   1      }
+ 132          //*************************************
+ 133          // 函数名称：init_TM1620
+ 134          // 函数功能：向TM1620初始化
+ 135          // 入口参数：无
+ 136          // 出口参数：无
+ 137          //***************************************/
+ 138          void init_TM1620(void)
+ 139          {
+ 140   1        //u8 i;
+ 141   1        //
+ 142   1        GPIO_SET_MUX_MODE(P01CFG, GPIO_MUX_GPIO);
+ 143   1        GPIO_ENABLE_OUTPUT(P0TRIS, GPIO_PIN_1);       //输出
+ 144   1        GPIO_ENABLE_OD(P0OD, GPIO_PIN_1);
+ 145   1        //
+ 146   1        GPIO_SET_MUX_MODE(P02CFG, GPIO_MUX_GPIO);
+ 147   1        GPIO_ENABLE_OUTPUT(P0TRIS, GPIO_PIN_2);
+ 148   1        GPIO_ENABLE_OD(P0OD, GPIO_PIN_2);             //设置开漏输出模式
+ 149   1        //
+ 150   1        GPIO_SET_MUX_MODE(P03CFG, GPIO_MUX_GPIO);
+ 151   1        GPIO_ENABLE_OUTPUT(P0TRIS, GPIO_PIN_3);
+ 152   1        GPIO_ENABLE_OD(P0OD, GPIO_PIN_3);
+ 153   1        //
+ 154   1        CLK = 1;          //初始电平高      ---外部有上拉电阻
+ 155   1        STB = 1;
+ 156   1        DIO = 1;
+ 157   1        //
+ 158   1        /* Write_COM(dissetmode);       //设置显示模式
+ 159   1         Write_COM(writedatamode_z);  //自动模式 自动加1模式
+ 160   1         Write_COM(startaddress);
+ 161   1         //
+ 162   1         for(i=0; i<6; i++)                 //此处i变量为地址，相当于打开6个位选
+ 163   1         {
+ 164   1             Write_COM(startaddress+i*2);     //传地址
+ 165   1             TM1620_Write(0x00);      //传数据
+ 166   1         }
+ 167   1         Write_COM(disconmode);       //显示控制命令
+ 168   1         STB=1;                      // 数据传输完毕，STB被拉高
+ 169   1        */
+ 170   1      }
+ 171          
+ 172          
+ 173          //*************************************
+ 174          // 函数名称：led_show
+ 175          // 函数功能：TM1620显示数据
+ 176          // 入口参数：无
+ 177          // 出口参数：无
+C51 COMPILER V9.60.0.0   BSP_1620                                                          06/05/2023 23:10:08 PAGE 4   
+
+ 178          //***************************************/
+ 179          void TM1620_Dsplay(unsigned char ch,unsigned char dat)
+ 180          {
+ 181   1        CLK = 1;          //高
+ 182   1        STB = 1;
+ 183   1        DIO = 1;
+ 184   1        //
+ 185   1        Write_COM(0x02);            //显示模式设置，设置为6个GRID，8个SEG
+ 186   1        Write_COM(writedatamode_z);  //地址增加模式 固定地址
+ 187   1        //
+ 188   1        Write_COM(startaddress+(ch-1)*2);//传起始地址
+ 189   1        TM1620_Write(1<<(dat-1));     //传数据
+ 190   1        //
+ 191   1        Write_COM(disconmode);        //显示控制命令
+ 192   1        STB=1;                        // 数据传输完毕，STB被拉高
+ 193   1      }
+ 194          
+ 195          
+ 196          //*************************************
+ 197          // 函数名称：led_show
+ 198          // 函数功能：TM1620显示数据
+ 199          // 入口参数：无
+ 200          // 出口参数：无
+ 201          //***************************************/
+ 202          void led_show()
+ 203          {
+ 204   1        u8 i;
+ 205   1        //
+ 206   1        u8 temp[4]; //定义四个变量，即要显示的四个数字
+ 207   1        temp[0]=1;  //先把TmData求余数后再求商，最后在赋值给temp[0]，即取出TmData的千位数
+ 208   1        temp[1]=2;  //同上
+ 209   1        temp[2]=3;
+ 210   1        temp[3]=4;
+ 211   1        //
+ 212   1        Write_COM(dissetmode);            //设置显示模式
+ 213   1        Write_COM(writedatamode_z);       //自动模式 自动加1模式
+ 214   1        //Write_COM(startaddress);
+ 215   1        //
+ 216   1        for(i=0; i<6; i++)                //此处i变量为地址，相当于打开6个位选
+ 217   1          {
+ 218   2            Write_COM(startaddress+i*2);  //传地址
+ 219   2            TM1620_Write(LED_tab[i]);     //传数据
+ 220   2          }
+ 221   1        Write_COM(disconmode);        //显示控制命令
+ 222   1        STB=1;                        // 数据传输完毕，STB被拉高
+ 223   1      
+ 224   1      
+ 225   1      }
+ 226          
+ 227          void display_1620(void)
+ 228          {
+ 229   1        u8 i;
+ 230   1        //
+ 231   1        Write_COM(dissetmode);            //设置显示模式
+ 232   1        Write_COM(writedatamode_z);       //自动模式 自动加1模式
+ 233   1        //Write_COM(startaddress);
+ 234   1        //
+ 235   1        for(i=0; i<6; i++)                //此处i变量为地址，相当于打开6个位选
+ 236   1          {
+ 237   2            Write_COM(startaddress+i*2);  //传地址
+ 238   2            TM1620_Write(LED_tab[TM1620_temp[i]]);//传数据
+ 239   2          }
+C51 COMPILER V9.60.0.0   BSP_1620                                                          06/05/2023 23:10:08 PAGE 5   
+
+ 240   1        Write_COM(disconmode);        //显示控制命令
+ 241   1        STB=1;                        //数据传输完毕，STB被拉高
+ 242   1      }
+ 243          //
+ 244          void display_off(void)
+ 245          {
+ 246   1        u8 i;
+ 247   1        //
+ 248   1        Write_COM(dissetmode);            //设置显示模式
+ 249   1        Write_COM(writedatamode_z);       //自动模式 自动加1模式
+ 250   1        //Write_COM(startaddress);
+ 251   1        //
+ 252   1        for(i=0; i<6; i++)                //此处i变量为地址，相当于打开6个位选
+ 253   1          {
+ 254   2            Write_COM(startaddress+i*2);  //传地址
+ 255   2            TM1620_Write(0x00);           //传数据
+ 256   2          }
+ 257   1        Write_COM(discommode_off);            //显示控制命令
+ 258   1        STB=1;                            //数据传输完毕，STB被拉高
+ 259   1      }
+ 260          
+ 261          /*********************************************************************************************************
+             -*
+ 262          * 函 数 名:auto_countdown
+ 263          * 功能说明: 上电显示  DLY       003  并且倒计时
+ 264          * 形    参: 无
+ 265          * 返 回 值: 无                    1ms时基   1S切换一个数据，减到0进入下一个状态
+ 266          *********************************************************************************************************
+ 267          */
+ 268          void auto_countdown(void)
+ 269          {
+ 270   1        //
+ 271   1        //static u8 VarDisplayUpdateCnt = 0;
+ 272   1        //
+ 273   1        if(VarAutoSet >0)
+ 274   1          {
+ 275   2            VarAutoTimeCnt++;
+ 276   2            if(VarAutoTimeCnt >= 1000)  //1ms*1000 = 1s
+ 277   2              {
+ 278   3                VarAutoTimeCnt =0  ;
+ 279   3                VarAutoSet --;
+ 280   3                VarDisplayUpdateCnt = 0;  //刷新数据
+ 281   3              }      //
+ 282   2          }
+ 283   1        else
+ 284   1          {
+ 285   2            VarAutoSet = 0;
+ 286   2            VarAutoTimeCnt++;
+ 287   2            if(VarAutoTimeCnt >= 500)
+ 288   2              {
+ 289   3                VarAutoTimeCnt = 0;
+ 290   3                VarAutoSet = 0;
+ 291   3                //
+ 292   3                SysStatus = 1;            //显示正常模式
+ 293   3                BitDisplayData_chang = 1;
+ 294   3                VarDisplayUpdateCnt = 0;
+ 295   3              }
+ 296   2          }
+ 297   1        TM1620_temp[0] = 10;      //
+ 298   1        TM1620_temp[1] = 11;      //
+ 299   1        TM1620_temp[2] = 12;      //
+ 300   1        //
+C51 COMPILER V9.60.0.0   BSP_1620                                                          06/05/2023 23:10:08 PAGE 6   
+
+ 301   1        TM1620_temp[3] = 13;      //
+ 302   1        TM1620_temp[4] = 13;      //
+ 303   1      
+ 304   1        TM1620_temp[5] = VarAutoSet;//倒计时 3 - 2- 1- 0
+ 305   1        //
+ 306   1      
+ 307   1        if(VarDisplayUpdateCnt == 0)
+ 308   1          {
+ 309   2            VarDisplayUpdateCnt = 1;
+ 310   2            //更新一次数据
+ 311   2            display_1620();           //刷新数据
+ 312   2            //
+ 313   2          }
+ 314   1        //
+ 315   1      #if 0
+                if(VarAutoSetCnt < 3)
+                  {
+                    TM1620_temp[0] = 10;      //
+                    TM1620_temp[1] = 11;      //
+                    TM1620_temp[2] = 12;      //
+                    //
+                    TM1620_temp[3] = 13;      //
+                    TM1620_temp[4] = 13;      //
+              
+                    TM1620_temp[5] = VarAutoSet;//
+                    //
+                    if(VarDisplayUpdateCnt == 0)
+                      {
+                        VarDisplayUpdateCnt = 1;
+                        //更新一次数据
+                        display_1620();           //刷新数据
+                        //
+                      }
+                    else
+                      {
+                        VarAutoTimeCnt++;
+                        if(VarAutoTimeCnt >= 1000)  //1ms*1000 = 1s
+                          {
+                            VarAutoTimeCnt =0  ;
+                            VarAutoSet --;
+                            VarDisplayUpdateCnt = 0;  //刷新数据
+                            //
+                            if(++VarAutoSetCnt == 3)
+                              {
+                                VarAutoSetCnt = 3;
+                                VarAutoTimeCnt = 0;
+                              }
+                          }
+                      }
+                  }
+                else                      //进入显示状态
+                  {
+                    VarAutoSet = 0;
+              
+                    SysStatus = 1;    //显示正常模式
+                    BitDisplayData_chang = 1;
+                    VarDisplayUpdateCnt = 0;
+                  }
+              #endif
+ 360   1      }
+ 361          /*
+ 362          *********************************************************************************************************
+C51 COMPILER V9.60.0.0   BSP_1620                                                          06/05/2023 23:10:08 PAGE 7   
+
+ 363          * 函 数 名:display_refurbish
+ 364          * 功能说明: 显示数据更新  有数据更改才进入这，数据刷新
+ 365          * 形    参: 无
+ 366          * 返 回 值: 无
+ 367          *********************************************************************************************************
+ 368          */
+ 369          void display(void)
+ 370          {
+ 371   1        if(!SysStatus)  return ;
+ 372   1        //数据存入缓存，进行刷新显示
+ 373   1        if(BitDisplayOn)            //
+ 374   1          {
+ 375   2      
+ 376   2            //输入通道
+ 377   2            TM1620_temp[0] = VarINCnt;      //
+ 378   2      
+ 379   2            TM1620_temp[1] = 13;            // -
+ 380   2            //输出通道
+ 381   2            TM1620_temp[2] = VarOutCnt;     //
+ 382   2            //
+ 383   2            //音频等级
+ 384   2            if(BitVoiceMute)              //禁用音量
+ 385   2              {
+ 386   3                TM1620_temp[3] = 13;      //-     显示“-”
+ 387   3                TM1620_temp[4] = 13;      //-
+ 388   3                TM1620_temp[5] = 13;      //-
+ 389   3              }
+ 390   2            else
+ 391   2              {
+ 392   3                TM1620_temp[3] = VarVoiceLevel/100;     //百位
+ 393   3                TM1620_temp[4] = VarVoiceLevel%100/10;  //十位
+ 394   3                TM1620_temp[5] = VarVoiceLevel%10;      //个位
+ 395   3              }
+ 396   2            if(BitDisplayData_chang)      //数据有更改时，进行显示刷新
+ 397   2              {
+ 398   3                BitDisplayData_chang = 0;
+ 399   3                display_1620();           //刷新数据
+ 400   3                //
+ 401   3              }
+ 402   2          }
+ 403   1        else
+ 404   1          {
+ 405   2            TM1620_temp[0] = 13;      //-
+ 406   2            TM1620_temp[1] = 13;      //-
+ 407   2            TM1620_temp[2] = 13;      //-
+ 408   2            TM1620_temp[3] = 13;      //-
+ 409   2            TM1620_temp[4] = 13;      //-
+ 410   2            TM1620_temp[5] = 13;      //-
+ 411   2            //
+ 412   2            if(BitDisplayData_chang)      //数据有更改时，进行显示刷新
+ 413   2              {
+ 414   3                BitDisplayData_chang = 0;
+ 415   3                display_1620();             //刷新显示数据
+ 416   3              }
+ 417   2          }
+ 418   1      
+ 419   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    612    ----
+   CONSTANT SIZE    =     14    ----
+C51 COMPILER V9.60.0.0   BSP_1620                                                          06/05/2023 23:10:08 PAGE 8   
+
+   XDATA SIZE       =      8    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      5       4
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

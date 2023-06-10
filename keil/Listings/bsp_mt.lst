@@ -1,0 +1,563 @@
+C51 COMPILER V9.60.0.0   BSP_MT                                                            06/05/2023 23:10:09 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE BSP_MT
+OBJECT MODULE PLACED IN .\Objects\bsp_mt.obj
+COMPILER INVOKED BY: C:\Tools\MDK\C51\BIN\C51.EXE ..\code\bsp_mt.c OMF2 OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Libary\Device
+                    -\CMS8S6990\Include;..\Libary\StdDriver\inc;..\code) DEBUG PRINT(.\Listings\bsp_mt.lst) TABS(2) OBJECT(.\Objects\bsp_mt.o
+                    -bj)
+
+line level    source
+
+   1          /*
+   2          *********************************************************************************************************
+   3          *
+   4          * 模块名称 :
+   5          * 文件名称 : bsp_mt.c
+   6          * 版    本 : V1.0
+   7          * 说    明 :
+   8          *
+   9          * 修改记录 :
+  10          *   版本号  日期         作者     说明
+  11          *
+  12          *********************************************************************************************************
+  13          */
+  14          /*
+  15          INA     INB           状态
+  16          H       L             正转
+  17          L       H             反转
+  18          H       H             刹车
+  19          L       L             待机
+  20          */
+  21          
+  22          
+  23          #include "all.h"
+  24          
+  25          //定义IO口  马达控制
+  26          
+  27          sbit   IN_A = P2^4;           //定义
+  28          sbit   IN_B = P2^5;           //定义
+  29          //音频等级对应的ADC的数据
+  30          //  VDD / 4096 = Vr /Vadc
+  31          //
+  32          code  u16 Voice_Adc_Table[255]=
+  33          {
+  34            0XFFF,
+  35            0XFEF,
+  36            0XFDF,
+  37            0XFD0,
+  38            0XFC0,
+  39            0XFB1,
+  40            0XFA1,
+  41            0XF92,
+  42            0XF82,
+  43            0XF72,
+  44            0XF63,
+  45            0XF53,
+  46            0XF44,
+  47            0XF34,
+  48            0XF25,
+  49            0XF15,
+  50            0XF06,
+  51            0XEF6,
+  52            0XEE6,
+  53            0XED7,
+C51 COMPILER V9.60.0.0   BSP_MT                                                            06/05/2023 23:10:09 PAGE 2   
+
+  54            0XEC7,
+  55            0XEB8,
+  56            0XEA8,
+  57            0XE99,
+  58            0XE89,
+  59            0XE79,
+  60            0XE6A,
+  61            0XE5A,
+  62            0XE4B,
+  63            0XE3B,
+  64            0XE2C,
+  65            0XE1C,
+  66            0XE0D,
+  67            0XDFD,
+  68            0XDED,
+  69            0XDDE,
+  70            0XDCE,
+  71            0XDBF,
+  72            0XDAF,
+  73            0XDA0,
+  74            0XD90,
+  75            0XD80,
+  76            0XD71,
+  77            0XD61,
+  78            0XD52,
+  79            0XD42,
+  80            0XD33,
+  81            0XD23,
+  82            0XD14,
+  83            0XD04,
+  84            0XCF4,
+  85            0XCE5,
+  86            0XCD5,
+  87            0XCC6,
+  88            0XCB6,
+  89            0XCA7,
+  90            0XC97,
+  91            0XC88,
+  92            0XC78,
+  93            0XC68,
+  94            0XC59,
+  95            0XC49,
+  96            0XC3A,
+  97            0XC2A,
+  98            0XC1B,
+  99            0XC0B,
+ 100            0XBFB,
+ 101            0XBEC,
+ 102            0XBDC,
+ 103            0XBCD,
+ 104            0XBBD,
+ 105            0XBAE,
+ 106            0XB9E,
+ 107            0XB8F,
+ 108            0XB7F,
+ 109            0XB6F,
+ 110            0XB60,
+ 111            0XB50,
+ 112            0XB41,
+ 113            0XB31,
+ 114            0XB22,
+ 115            0XB12,
+C51 COMPILER V9.60.0.0   BSP_MT                                                            06/05/2023 23:10:09 PAGE 3   
+
+ 116            0XB02,
+ 117            0XAF3,
+ 118            0XAE3,
+ 119            0XAD4,
+ 120            0XAC4,
+ 121            0XAB5,
+ 122            0XAA5,
+ 123            0XA96,
+ 124            0XA86,
+ 125            0XA76,
+ 126            0XA67,
+ 127            0XA57,
+ 128            0XA48,
+ 129            0XA38,
+ 130            0XA29,
+ 131            0XA19,
+ 132            0XA0A,
+ 133            0X9FA,
+ 134            0X9EA,
+ 135            0X9DB,
+ 136            0X9CB,
+ 137            0X9BC,
+ 138            0X9AC,
+ 139            0X99D,
+ 140            0X98D,
+ 141            0X97D,
+ 142            0X96E,
+ 143            0X95E,
+ 144            0X94F,
+ 145            0X93F,
+ 146            0X930,
+ 147            0X920,
+ 148            0X911,
+ 149            0X901,
+ 150            0X8F1,
+ 151            0X8E2,
+ 152            0X8D2,
+ 153            0X8C3,
+ 154            0X8B3,
+ 155            0X8A4,
+ 156            0X894,
+ 157            0X884,
+ 158            0X875,
+ 159            0X865,
+ 160            0X856,
+ 161            0X846,
+ 162            0X837,
+ 163            0X827,
+ 164            0X818,
+ 165            0X808,
+ 166            0X7F8,
+ 167            0X7E9,
+ 168            0X7D9,
+ 169            0X7CA,
+ 170            0X7BA,
+ 171            0X7AB,
+ 172            0X79B,
+ 173            0X78C,
+ 174            0X77C,
+ 175            0X76C,
+ 176            0X75D,
+ 177            0X74D,
+C51 COMPILER V9.60.0.0   BSP_MT                                                            06/05/2023 23:10:09 PAGE 4   
+
+ 178            0X73E,
+ 179            0X72E,
+ 180            0X71F,
+ 181            0X70F,
+ 182            0X6FF,
+ 183            0X6F0,
+ 184            0X6E0,
+ 185            0X6D1,
+ 186            0X6C1,
+ 187            0X6B2,
+ 188            0X6A2,
+ 189            0X693,
+ 190            0X683,
+ 191            0X673,
+ 192            0X664,
+ 193            0X654,
+ 194            0X645,
+ 195            0X635,
+ 196            0X626,
+ 197            0X616,
+ 198            0X606,
+ 199            0X5F7,
+ 200            0X5E7,
+ 201            0X5D8,
+ 202            0X5C8,
+ 203            0X5B9,
+ 204            0X5A9,
+ 205            0X59A,
+ 206            0X58A,
+ 207            0X57A,
+ 208            0X56B,
+ 209            0X55B,
+ 210            0X54C,
+ 211            0X53C,
+ 212            0X52D,
+ 213            0X51D,
+ 214            0X50E,
+ 215            0X4FE,
+ 216            0X4EE,
+ 217            0X4DF,
+ 218            0X4CF,
+ 219            0X4C0,
+ 220            0X4B0,
+ 221            0X4A1,
+ 222            0X491,
+ 223            0X481,
+ 224            0X472,
+ 225            0X462,
+ 226            0X453,
+ 227            0X443,
+ 228            0X434,
+ 229            0X424,
+ 230            0X415,
+ 231            0X405,
+ 232            0X3F5,
+ 233            0X3E6,
+ 234            0X3D6,
+ 235            0X3C7,
+ 236            0X3B7,
+ 237            0X3A8,
+ 238            0X398,
+ 239            0X388,
+C51 COMPILER V9.60.0.0   BSP_MT                                                            06/05/2023 23:10:09 PAGE 5   
+
+ 240            0X379,
+ 241            0X369,
+ 242            0X35A,
+ 243            0X34A,
+ 244            0X33B,
+ 245            0X32B,
+ 246            0X31C,
+ 247            0X30C,
+ 248            0X2FC,
+ 249            0X2ED,
+ 250            0X2DD,
+ 251            0X2CE,
+ 252            0X2BE,
+ 253            0X2AF,
+ 254            0X29F,
+ 255            0X290,
+ 256            0X280,
+ 257            0X270,
+ 258            0X261,
+ 259            0X251,
+ 260            0X242,
+ 261            0X232,
+ 262            0X223,
+ 263            0X213,
+ 264            0X203,
+ 265            0X1F4,
+ 266            0X1E4,
+ 267            0X1D5,
+ 268            0X1C5,
+ 269            0X1B6,
+ 270            0X1A6,
+ 271            0X197,
+ 272            0X187,
+ 273            0X177,
+ 274            0X168,
+ 275            0X158,
+ 276            0X149,
+ 277            0X139,
+ 278            0X12A,
+ 279            0X11A,
+ 280            0X10A,
+ 281            0XFB,
+ 282            0XEB,
+ 283            0XDC,
+ 284            0XCC,
+ 285            0XBD,
+ 286            0XAD,
+ 287            0X9E,
+ 288            0X8E
+ 289          };
+ 290          bit BitUpData_chang;
+ 291          bit BitData_Astrict_F;    //正转限制
+ 292          bit BitData_Astrict_R;    //反转限制
+ 293          /*
+ 294          *********************************************************************************************************
+ 295          * 函 数 名:
+ 296          * 功能说明: 配置
+ 297          * 形    参: 无
+ 298          * 返 回 值: 无
+ 299          *********************************************************************************************************
+ 300          */
+ 301          void mt_init(void)
+C51 COMPILER V9.60.0.0   BSP_MT                                                            06/05/2023 23:10:09 PAGE 6   
+
+ 302          {
+ 303   1        //待机
+ 304   1        IN_A = 0;
+ 305   1        IN_B = 0;
+ 306   1        //
+ 307   1        GPIO_SET_MUX_MODE(P24CFG, GPIO_MUX_GPIO);
+ 308   1        GPIO_ENABLE_OUTPUT(P2TRIS, GPIO_PIN_4);
+ 309   1      
+ 310   1        GPIO_SET_MUX_MODE(P25CFG, GPIO_MUX_GPIO);
+ 311   1        GPIO_ENABLE_OUTPUT(P2TRIS, GPIO_PIN_5);
+ 312   1      }
+ 313          
+ 314          /*
+ 315          *********************************************************************************************************
+ 316          * 函 数 名:
+ 317          * 功能说明: 配置
+ 318          * 形    参: 无
+ 319          * 返 回 值: 无
+ 320          *********************************************************************************************************
+ 321          */
+ 322          //************************************************************* */
+ 323          //函数名称：MotorForward()
+ 324          //函数功能：设置电机正转的角度
+ 325          //入口参数：无
+ 326          //出口参数：无
+ 327          //************************************************************** */
+ 328          void MotorForward(void)
+ 329          {
+ 330   1        IN_A = 1;
+ 331   1        IN_B = 0;
+ 332   1      }
+ 333          //************************************************************* */
+ 334          //函数名称：MotorCcwDegre()
+ 335          //函数功能：设置电机反转的角度
+ 336          //入口参数：无
+ 337          //出口参数：无
+ 338          //************************************************************** */
+ 339          void MotorReverse(void)
+ 340          {
+ 341   1        IN_A = 0;
+ 342   1        IN_B = 1;
+ 343   1      }
+ 344          
+ 345          //************************************************************* */
+ 346          //函数名称：MotorCcwDegre()
+ 347          //函数功能：设置电机刹车
+ 348          //入口参数：无
+ 349          //出口参数：无
+ 350          //************************************************************** */
+ 351          void MotorStop(void)
+ 352          {
+ 353   1        IN_A = 1;
+ 354   1        IN_B = 1;
+ 355   1      }
+ 356          
+ 357          u8 Gu8_sz = sizeof(Voice_Adc_Table) / sizeof(Voice_Adc_Table[0]);
+ 358          //二分查找法
+ 359          u8 binary_search(u8* addr, u8 Data, u8 sz)
+ 360          {
+ 361   1        u8 left = 0;
+ 362   1        u8 right = sz - 1;
+ 363   1        u8 mid = 0;
+C51 COMPILER V9.60.0.0   BSP_MT                                                            06/05/2023 23:10:09 PAGE 7   
+
+ 364   1      
+ 365   1        while (left < right)
+ 366   1          {
+ 367   2            mid = (left + right) / 2;
+ 368   2            if (addr[mid] > Data)
+ 369   2              {
+ 370   3                left = mid + 1;
+ 371   3              }
+ 372   2            else if (addr[mid] < Data)
+ 373   2              {
+ 374   3                right = mid - 1;
+ 375   3              }
+ 376   2            else
+ 377   2              {
+ 378   3                if(mid >= (sz - 1))
+ 379   3                  {
+ 380   4                    mid = sz-1;
+ 381   4                  }
+ 382   3                return mid;
+ 383   3              }
+ 384   2          }
+ 385   1        if(left >= (sz - 1))
+ 386   1          {
+ 387   2            left = sz-1;
+ 388   2          }
+ 389   1        return left;  //范围是 left 到 left + 1
+ 390   1      }
+ 391          
+ 392          u16 VarADData_Vlaue = 0;
+ 393          bit BitMTDirection_Forward;
+ 394          bit BitMTDirection_Rollback;
+ 395          bit BitVoicelevel_chang;
+ 396          /*
+ 397          *********************************************************************************************************
+ 398          * 函 数 名:mt_ctrl()
+ 399          * 功能说明: 根据设置的Voice的等级，调整电机输出还是停止。
+ 400          * 形    参: 无
+ 401          * 返 回 值: 无
+ 402          *********************************************************************************************************
+ 403          */
+ 404          
+ 405          void mt_ctrl()
+ 406          {
+ 407   1        static u8 VarVoiceLevel_Back = 0;
+ 408   1        //
+ 409   1        if(BitDisplayOn)            //开启状态下进入此
+ 410   1          {
+ 411   2            //限制----到达最大位置，停止
+ 412   2            if(BitData_Astrict_R || BitData_Astrict_F)
+ 413   2              {
+ 414   3                MotorStop();
+ 415   3                BitMTDirection_Forward = 0;       //正转
+ 416   3                BitMTDirection_Rollback = 0;      //反转
+ 417   3              }
+ 418   2            else
+ 419   2              {
+ 420   3      
+ 421   3                //获取AD数据
+ 422   3                VarADData_Vlaue = GetADValue(0,8);
+ 423   3                //判断转的方向
+ 424   3                if(BitUpData_chang)     //数据有变化
+ 425   3                  {
+C51 COMPILER V9.60.0.0   BSP_MT                                                            06/05/2023 23:10:09 PAGE 8   
+
+ 426   4                    BitUpData_chang = 0;
+ 427   4                    //
+ 428   4                    BitMTDirection_Forward = 0;       //正转清除
+ 429   4                    BitMTDirection_Rollback = 0;      //反转清除
+ 430   4                    MotorStop();
+ 431   4                    //
+ 432   4                    /*  if((VarADData_Vlaue >= Voice_Adc_Table[0]-3 ) || (VarADData_Vlaue <= Voice_Adc_Table[254]
+             -) \
+ 433   4                        || (VarADData_Vlaue ==  Voice_Adc_Table[VarVoiceLevel]))
+ 434   4                        {
+ 435   4                          //停止
+ 436   4                            BitMTDirection_Forward = 0;       //正转
+ 437   4                            BitMTDirection_Rollback = 0;      //反转
+ 438   4                        }
+ 439   4                        else */
+ 440   4                    if((VarADData_Vlaue >= Voice_Adc_Table[VarVoiceLevel]) && (VarVoiceLevel > VarVoiceLevel_Bac
+             -k ) )
+ 441   4                      {
+ 442   5                        BitMTDirection_Forward = 1;
+ 443   5                      }
+ 444   4                    else if((VarADData_Vlaue <=Voice_Adc_Table[VarVoiceLevel]) && (VarVoiceLevel < VarVoiceLevel
+             -_Back))
+ 445   4                      {
+ 446   5                        BitMTDirection_Rollback = 1;      //反转
+ 447   5                      }
+ 448   4                    else
+ 449   4                      {
+ 450   5      
+ 451   5                      }
+ 452   4                    //
+ 453   4                    VarVoiceLevel_Back = VarVoiceLevel  ;       //保存上一次得等级值，防止出现等级增加，采集到AD值导
+             -致反转。
+ 454   4                    //
+ 455   4                  }
+ 456   3                //
+ 457   3                if(BitMTDirection_Forward)
+ 458   3                  {
+ 459   4                    MotorForward();//电机正转
+ 460   4                    //
+ 461   4                    //if((VarADData_Vlaue >= Voice_Adc_Table[VarVoiceLevel] - 3) || (VarADData_Vlaue <= Voice_Ad
+             -c_Table[VarVoiceLevel])-3)
+ 462   4                    if(VarADData_Vlaue <= (Voice_Adc_Table[VarVoiceLevel]-3))
+ 463   4                      {
+ 464   5                        MotorStop();
+ 465   5                        BitMTDirection_Forward =0;
+ 466   5                      }
+ 467   4                    //
+ 468   4                    if(VarVoiceLevel >=254)
+ 469   4                      {
+ 470   5                        BitData_Astrict_F = 1;      //限制
+ 471   5                      }
+ 472   4                    else
+ 473   4                      {
+ 474   5                        BitData_Astrict_F = 0;
+ 475   5                      }
+ 476   4                  }
+ 477   3                else if(BitMTDirection_Rollback)
+ 478   3                  {
+ 479   4                    MotorReverse();//电机反转
+ 480   4                    //
+ 481   4                    if(VarADData_Vlaue >= (Voice_Adc_Table[VarVoiceLevel] - 3) )
+ 482   4                      {
+C51 COMPILER V9.60.0.0   BSP_MT                                                            06/05/2023 23:10:09 PAGE 9   
+
+ 483   5                        MotorStop();
+ 484   5                        BitMTDirection_Rollback =0;
+ 485   5                      }
+ 486   4                    //
+ 487   4                    //
+ 488   4                    if(VarVoiceLevel <=0)
+ 489   4                      {
+ 490   5                        BitData_Astrict_R = 1;      //限制
+ 491   5                      }
+ 492   4                    else
+ 493   4                      {
+ 494   5                        BitData_Astrict_R = 0;
+ 495   5                      }
+ 496   4                  }
+ 497   3                else
+ 498   3                  {
+ 499   4                    MotorStop();
+ 500   4                    BitMTDirection_Forward = 0;       //正转
+ 501   4                    BitMTDirection_Rollback = 0;      //反转
+ 502   4                  }
+ 503   3              }
+ 504   2          }
+ 505   1        else
+ 506   1          {
+ 507   2            BitData_Astrict_F = 0;
+ 508   2            BitData_Astrict_R = 0;
+ 509   2          }
+ 510   1      
+ 511   1      }
+ 512          
+ 513          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    387    ----
+   CONSTANT SIZE    =    510    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      4       7
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      6    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

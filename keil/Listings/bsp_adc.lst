@@ -1,0 +1,109 @@
+C51 COMPILER V9.60.0.0   BSP_ADC                                                           06/05/2023 23:10:09 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE BSP_ADC
+OBJECT MODULE PLACED IN .\Objects\bsp_adc.obj
+COMPILER INVOKED BY: C:\Tools\MDK\C51\BIN\C51.EXE ..\code\bsp_adc.c OMF2 OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Libary\Devic
+                    -e\CMS8S6990\Include;..\Libary\StdDriver\inc;..\code) DEBUG PRINT(.\Listings\bsp_adc.lst) TABS(2) OBJECT(.\Objects\bsp_ad
+                    -c.obj)
+
+line level    source
+
+   1          /* *****************************************************
+   2          // 文件名   : bsp_adc.c
+   3          // 处理器   : cms8s6990  ssop24
+   4          // 编译环境 : Keil5 C51
+   5          // 系统时钟 :
+   6          // 版    本 : V1.0
+   7          // 生成日期 :
+   8          // 修改日期 :
+   9          // 简单描述 :
+  10          ***************************************************** */
+  11          #include "all.h"
+  12          
+  13          
+  14          //*************************************
+  15          // 函数名称：adc_config
+  16          // 函数功能：ADC配置初始化
+  17          // 入口参数：无
+  18          // 出口参数：无
+  19          //***************************************/
+  20          void adc_config()
+  21          {
+  22   1        //设置ADC的运行模式
+  23   1        ADC_ConfigRunMode(ADC_CLK_DIV_16, ADC_RESULT_LEFT); //设置ADC时钟为系统时钟的16分频，ADC结果为左对齐，如
+             -有对ADC时钟有操作请参考"中微8051芯片ADC模块应用笔记"
+  24   1        //设置ADC转换通道--端口配置
+  25   1        ADC_EnableChannel(ADC_CH_0);
+  26   1        GPIO_SET_MUX_MODE(P00CFG, GPIO_P00_MUX_AN0);
+  27   1        //设置ADC参考电压  VDD
+  28   1        //ADC_EnableLDO();
+  29   1        //ADC_ConfigADCVref(ADC_VREF_3V);   //ADC_VREF_1P2V, ADC_VREF_2V, ADC_VREF_2P4V, ADC_VREF_3V
+  30   1        //LDO禁止，参考电压为芯片电源电压。
+  31   1        ADC_DisableLDO();
+  32   1        //设置ADC中断
+  33   1        //ADC_EnableInt();
+  34   1        //IRQ_SET_PRIORITY(IRQ_ADC,IRQ_PRIORITY_HIGH);
+  35   1        //IRQ_ALL_ENABLE();
+  36   1      
+  37   1        //开启ADC--1= 使能ADC ADC1EN
+  38   1        ADC_Start();
+  39   1      }
+  40          
+  41          //*************************************************************************
+  42          //                             AD采样
+  43          //丢弃最大值,最小值, 其他值做平均
+  44          //最大次数: 8次,  建议设为1,2,4,8.
+  45          //*************************************************************************
+  46          unsigned int GetADValue(unsigned char ADChannel,unsigned char ADFilterNum)
+  47          {
+  48   1        unsigned int ADVaule=0,Temp=0,ADValueMax=0x0000,ADValueMin=0xffff;
+  49   1        unsigned char SampleNum=0;
+  50   1        //
+  51   1        if(ADFilterNum > 8)
+  52   1          ADFilterNum = 8;                                    //最大采样次数限制16次.
+C51 COMPILER V9.60.0.0   BSP_ADC                                                           06/05/2023 23:10:09 PAGE 2   
+
+  53   1        //
+  54   1        ADCON1 |= ADChannel;
+  55   1        //
+  56   1        ADCON0 |= 0X02;                                     //开始ADC转换
+  57   1        while(!(ADCON0&0X02));                              //等待 ADC转换完成;  查询 ADGO 位
+  58   1        //                                                  //第一次次采样丢弃.
+  59   1        for(SampleNum=0; SampleNum<ADFilterNum+2; SampleNum++)
+  60   1          {
+  61   2            ADCON0 |= 0X02;                                   //开始ADC转换
+  62   2            while(!(ADCON0&0X02));                            //等待 ADC转换完成;
+  63   2            //
+  64   2            Temp = ADC_GetADCResult();
+  65   2      
+  66   2            if(Temp > ADValueMax)
+  67   2              ADValueMax = Temp;                            //保存最大值
+  68   2            else if(Temp < ADValueMin)
+  69   2              ADValueMin = Temp;                            //保存最小值.
+  70   2      
+  71   2            ADVaule += Temp;
+  72   2          }
+  73   1        ADVaule = ADVaule - ADValueMax;
+  74   1        ADVaule = ADVaule - ADValueMin;
+  75   1        ADVaule /= ADFilterNum;
+  76   1        return ADVaule;                                   //返回AD采样值
+  77   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    193    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       8
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

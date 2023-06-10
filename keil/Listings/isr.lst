@@ -1,0 +1,358 @@
+C51 COMPILER V9.60.0.0   ISR                                                               06/05/2023 23:10:08 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE ISR
+OBJECT MODULE PLACED IN .\Objects\isr.obj
+COMPILER INVOKED BY: C:\Tools\MDK\C51\BIN\C51.EXE ..\code\isr.c OMF2 OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Libary\Device\CM
+                    -S8S6990\Include;..\Libary\StdDriver\inc;..\code) DEBUG PRINT(.\Listings\isr.lst) TABS(2) OBJECT(.\Objects\isr.obj)
+
+line level    source
+
+   1          /*******************************************************************************
+   2          * Copyright (C) 2019 China Micro Semiconductor Limited Company. All Rights Reserved.
+   3          *
+   4          * This software is owned and published by:
+   5          * CMS LLC, No 2609-10, Taurus Plaza, TaoyuanRoad, NanshanDistrict, Shenzhen, China.
+   6          *
+   7          * BY DOWNLOADING, INSTALLING OR USING THIS SOFTWARE, YOU AGREE TO BE BOUND
+   8          * BY ALL THE TERMS AND CONDITIONS OF THIS AGREEMENT.
+   9          *
+  10          * This software contains source code for use with CMS
+  11          * components. This software is licensed by CMS to be adapted only
+  12          * for use in systems utilizing CMS components. CMS shall not be
+  13          * responsible for misuse or illegal use of this software for devices not
+  14          * supported herein. CMS is providing this software "AS IS" and will
+  15          * not be responsible for issues arising from incorrect user implementation
+  16          * of the software.
+  17          *
+  18          * This software may be replicated in part or whole for the licensed use,
+  19          * with the restriction that this Disclaimer and Copyright notice must be
+  20          * included with each copy of this software, whether used in part or whole,
+  21          * at all times.
+  22          */
+  23          
+  24          /****************************************************************************/
+  25          /** \file isr.c
+  26          ** 中断
+  27          **
+  28          **
+  29          **  History:
+  30          **
+  31          *****************************************************************************/
+  32          /****************************************************************************/
+  33          /*  include files
+  34          *****************************************************************************/
+  35          //#include "cms8s6990.h"
+  36          #include "all.h"
+  37          /****************************************************************************/
+  38          /*  Local pre-processor symbols('#define')
+  39          ****************************************************************************/
+  40          u8 xdata  BitTimer1ms;
+  41          u8 xdata VarTimer1ms;
+  42          u8 xdata  BitTime100us;
+  43          /****************************************************************************/
+  44          /*  Global variable definitions(declared in header file with 'extern')
+  45          ****************************************************************************/
+  46          
+  47          /****************************************************************************/
+  48          /*  Local type definitions('typedef')
+  49          ****************************************************************************/
+  50          
+  51          /****************************************************************************/
+  52          /*  Local variable  definitions('static')
+  53          ****************************************************************************/
+  54          
+C51 COMPILER V9.60.0.0   ISR                                                               06/05/2023 23:10:08 PAGE 2   
+
+  55          
+  56          /****************************************************************************/
+  57          /*  Local function prototypes('static')
+  58          ****************************************************************************/
+  59          
+  60          
+  61          /****************************************************************************/
+  62          /*  Function implementation - global ('extern') and local('static')
+  63          ****************************************************************************/
+  64          
+  65          
+  66          /******************************************************************************
+  67           ** \brief   INT0 interrupt service function
+  68           **
+  69           ** \param [in]  none
+  70           **
+  71           ** \return none
+  72           ******************************************************************************/
+  73          void INT0_IRQHandler(void)  interrupt INT0_VECTOR
+  74          {
+  75   1      
+  76   1      }
+  77          /******************************************************************************
+  78           ** \brief   Timer 0 interrupt service function
+  79           **
+  80           ** \param [in]  none
+  81           **
+  82           ** \return none
+  83          ******************************************************************************/
+  84          void Timer0_IRQHandler(void)  interrupt TMR0_VECTOR
+  85          {
+  86   1        //P24 = ~P24;
+  87   1        IR_RX();
+  88   1        BitTime100us = 1;
+  89   1        if(++VarTimer1ms >= 10)   //时间基值 100us
+  90   1          {
+  91   2            VarTimer1ms = 0;
+  92   2            BitTimer1ms = 1;
+  93   2          }
+  94   1      }
+  95          /******************************************************************************
+  96           ** \brief   INT0 interrupt service function
+  97           **
+  98           ** \param [in]  none
+  99           **
+ 100           ** \return none
+ 101           ******************************************************************************/
+ 102          void INT1_IRQHandler(void)  interrupt INT1_VECTOR
+ 103          {
+ 104   1      
+ 105   1      }
+ 106          /******************************************************************************
+ 107           ** \brief   Timer 1 interrupt service function
+ 108           **
+ 109           ** \param [in]  none
+ 110           **
+ 111           ** \return none
+ 112          ******************************************************************************/
+ 113          void Timer1_IRQHandler(void)  interrupt TMR1_VECTOR
+ 114          {
+ 115   1      
+ 116   1      }
+C51 COMPILER V9.60.0.0   ISR                                                               06/05/2023 23:10:08 PAGE 3   
+
+ 117          /******************************************************************************
+ 118           ** \brief   UART 0 interrupt service function
+ 119           **
+ 120           ** \param [in]  none
+ 121           **
+ 122           ** \return none
+ 123          ******************************************************************************/
+ 124          void UART0_IRQHandler(void)  interrupt UART0_VECTOR
+ 125          {
+ 126   1      
+ 127   1      }
+ 128          /******************************************************************************
+ 129           ** \brief   Timer 2 interrupt service function
+ 130           **
+ 131           ** \param [in]  none
+ 132           **
+ 133           ** \return none
+ 134          ******************************************************************************/
+ 135          void Timer2_IRQHandler(void)  interrupt TMR2_VECTOR
+ 136          {
+ 137   1      
+ 138   1      }
+ 139          /******************************************************************************
+ 140           ** \brief   UART 1 interrupt service function
+ 141           **
+ 142           ** \param [in]  none
+ 143           **
+ 144           ** \return none
+ 145          ******************************************************************************/
+ 146          void UART1_IRQHandler(void)  interrupt UART1_VECTOR
+ 147          {
+ 148   1        ;
+ 149   1      }
+ 150          /******************************************************************************
+ 151           ** \brief   GPIO 0 interrupt service function
+ 152           **
+ 153           ** \param [in]  none
+ 154           **
+ 155           ** \return none
+ 156           ******************************************************************************/
+ 157          void P0EI_IRQHandler(void)  interrupt P0EI_VECTOR
+ 158          {
+ 159   1      
+ 160   1      }
+ 161          /******************************************************************************
+ 162           ** \brief   GPIO 1 interrupt service function
+ 163           **
+ 164           ** \param [in]  none
+ 165           **
+ 166           ** \return none
+ 167           ******************************************************************************/
+ 168          void P1EI_IRQHandler(void)  interrupt P1EI_VECTOR
+ 169          {
+ 170   1        ;
+ 171   1      }
+ 172          /******************************************************************************
+ 173           ** \brief   GPIO 2 interrupt service function
+ 174           **
+ 175           ** \param [in]  none
+ 176           **
+ 177           ** \return none
+ 178           ******************************************************************************/
+C51 COMPILER V9.60.0.0   ISR                                                               06/05/2023 23:10:08 PAGE 4   
+
+ 179          void P2EI_IRQHandler(void)  interrupt P2EI_VECTOR
+ 180          {
+ 181   1      
+ 182   1      }
+ 183          /******************************************************************************
+ 184           ** \brief   GPIO 3 interrupt service function
+ 185           **
+ 186           ** \param [in]  none
+ 187           **
+ 188           ** \return none
+ 189           ******************************************************************************/
+ 190          void P3EI_IRQHandler(void)  interrupt P3EI_VECTOR
+ 191          {
+ 192   1        ;
+ 193   1      }
+ 194          
+ 195          /******************************************************************************
+ 196           ** \brief   LVD interrupt service function
+ 197           **
+ 198           ** \param [in]  none
+ 199           **
+ 200           ** \return none
+ 201           ******************************************************************************/
+ 202          void LVD_IRQHandler(void)  interrupt LVD_VECTOR
+ 203          {
+ 204   1      
+ 205   1      }
+ 206          /******************************************************************************
+ 207           ** \brief   LSE interrupt service function
+ 208           **
+ 209           ** \param [in]  none
+ 210           **
+ 211           ** \return none
+ 212           ******************************************************************************/
+ 213          void LSE_IRQHandler(void)  interrupt LSE_VECTOR
+ 214          {
+ 215   1      
+ 216   1      }
+ 217          
+ 218          /********************************************************************************
+ 219           ** \brief   ACMP interrupt service function
+ 220           **
+ 221           ** \param [in]  none
+ 222           **
+ 223           ** \return none
+ 224           ******************************************************************************/
+ 225          void ACMP_IRQHandler(void)  interrupt ACMP_VECTOR
+ 226          {
+ 227   1      
+ 228   1      }
+ 229          /******************************************************************************
+ 230           ** \brief   Timer 3 interrupt service function
+ 231           **
+ 232           ** \param [in]  none
+ 233           **
+ 234           ** \return none
+ 235          ******************************************************************************/
+ 236          void Timer3_IRQHandler(void)  interrupt TMR3_VECTOR
+ 237          {
+ 238   1      
+ 239   1      }
+ 240          /******************************************************************************
+C51 COMPILER V9.60.0.0   ISR                                                               06/05/2023 23:10:08 PAGE 5   
+
+ 241           ** \brief   Timer 4 interrupt service function
+ 242           **
+ 243           ** \param [in]  none
+ 244           **
+ 245           ** \return none
+ 246          ******************************************************************************/
+ 247          void Timer4_IRQHandler(void)  interrupt TMR4_VECTOR
+ 248          {
+ 249   1      
+ 250   1      }
+ 251          /******************************************************************************
+ 252           ** \brief   EPWM interrupt service function
+ 253           **
+ 254           ** \param [in]  none
+ 255           **
+ 256           ** \return none
+ 257           ******************************************************************************/
+ 258          void EPWM_IRQHandler(void)  interrupt EPWM_VECTOR
+ 259          {
+ 260   1      
+ 261   1      }
+ 262          /******************************************************************************
+ 263           ** \brief   ADC interrupt service function
+ 264           **
+ 265           ** \param [in]  none
+ 266           **
+ 267           ** \return none
+ 268           ******************************************************************************/
+ 269          void ADC_IRQHandler(void)  interrupt ADC_VECTOR
+ 270          {
+ 271   1      
+ 272   1      }
+ 273          /******************************************************************************
+ 274           ** \brief   WDT interrupt service function
+ 275           **
+ 276           ** \param [in]  none
+ 277           **
+ 278           ** \return none
+ 279           ******************************************************************************/
+ 280          void WDT_IRQHandler(void)  interrupt WDT_VECTOR
+ 281          {
+ 282   1      
+ 283   1      }
+ 284          /******************************************************************************
+ 285           ** \brief  I2C interrupt service function
+ 286           **
+ 287           ** \param [in]  none
+ 288           **
+ 289           ** \return none
+ 290           ******************************************************************************/
+ 291          void I2C_IRQHandler(void)  interrupt I2C_VECTOR
+ 292          {
+ 293   1        ;
+ 294   1      }
+ 295          /******************************************************************************
+ 296           ** \brief  SPI interrupt service function
+ 297           **
+ 298           ** \param [in]  none
+ 299           **
+ 300           ** \return none
+ 301           ******************************************************************************/
+ 302          void SPI_IRQHandler(void)  interrupt SPI_VECTOR
+C51 COMPILER V9.60.0.0   ISR                                                               06/05/2023 23:10:08 PAGE 6   
+
+ 303          {
+ 304   1        ;
+ 305   1      }
+ 306          
+ 307          
+ 308          
+ 309          
+ 310          
+ 311          
+ 312          
+ 313          
+ 314          
+ 315          
+ 316          
+ 317          
+ 318          
+ 319          
+ 320          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    170    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      3    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

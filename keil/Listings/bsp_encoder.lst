@@ -1,0 +1,530 @@
+C51 COMPILER V9.60.0.0   BSP_ENCODER                                                       06/05/2023 23:10:09 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE BSP_ENCODER
+OBJECT MODULE PLACED IN .\Objects\bsp_encoder.obj
+COMPILER INVOKED BY: C:\Tools\MDK\C51\BIN\C51.EXE ..\code\bsp_encoder.c OMF2 OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Libary\D
+                    -evice\CMS8S6990\Include;..\Libary\StdDriver\inc;..\code) DEBUG PRINT(.\Listings\bsp_encoder.lst) TABS(2) OBJECT(.\Object
+                    -s\bsp_encoder.obj)
+
+line level    source
+
+   1          #include "all.h"
+   2          
+   3          //IO电平轮询法驱动编码器
+   4          
+   5          
+   6          sbit   EC1_A = P3^0;            //定义
+   7          sbit   EC1_B = P3^1;            //定义
+   8          sbit   EC1_SW = P3^2;           //定义
+   9          //
+  10          sbit   EC2_A = P3^6;            //定义
+  11          sbit   EC2_B = P0^5;            //定义
+  12          sbit   EC2_SW = P2^6;           //定义
+  13          
+  14          bit BitDisplayData_chang;
+  15          
+  16          //https://whycan.com/t_6692.html
+  17          sbit EC_B1 = P0 ^ 0;   // 编码器 P0.0 端口
+  18          sbit EC_A1 = P1 ^ 3;   // 编码器 P1.3 端口
+  19          static uint8_t EC_A1_Val = 0, EC_B1_Val = 0;
+  20          static uint8_t EC_A1_old = 0, EC_B1_old = 0;
+  21          u8 KEY_state_A ;
+  22          //
+  23          sbit EC_B2 = P3 ^ 6;   // 编码器 P3.6 端口
+  24          sbit EC_A2 = P0 ^ 5;   // 编码器 P0.5 端口
+  25          static uint8_t EC_A2_Val = 0, EC_B2_Val = 0;
+  26          static uint8_t EC_A2_old = 0, EC_B2_old = 0;
+  27          u8 KEY_state_B;
+  28          
+  29          u8 BitK1LastStatus,BitK2LastStatus;
+  30          bit BitVoiceMute;
+  31          //
+  32          void encoder_init()
+  33          {
+  34   1        //A
+  35   1        GPIO_SET_MUX_MODE(P30CFG, GPIO_MUX_GPIO);
+  36   1        GPIO_ENABLE_INPUT(P3TRIS, GPIO_PIN_0);
+  37   1        GPIO_SET_MUX_MODE(P31CFG, GPIO_MUX_GPIO);
+  38   1        GPIO_ENABLE_INPUT(P3TRIS, GPIO_PIN_1);
+  39   1        //
+  40   1        GPIO_ENABLE_UP(P3UP,GPIO_PIN_2);
+  41   1        GPIO_SET_MUX_MODE(P32CFG, GPIO_MUX_GPIO);
+  42   1        GPIO_ENABLE_INPUT(P3TRIS, GPIO_PIN_2);
+  43   1        //B
+  44   1        GPIO_SET_MUX_MODE(P36CFG, GPIO_MUX_GPIO);
+  45   1        GPIO_ENABLE_INPUT(P3TRIS, GPIO_PIN_6);
+  46   1        GPIO_SET_MUX_MODE(P05CFG, GPIO_MUX_GPIO);
+  47   1        GPIO_ENABLE_INPUT(P0TRIS, GPIO_PIN_5);
+  48   1        //
+  49   1        GPIO_ENABLE_UP(P2UP,GPIO_PIN_6);
+  50   1        GPIO_SET_MUX_MODE(P26CFG, GPIO_MUX_GPIO);
+  51   1        GPIO_ENABLE_INPUT(P2TRIS, GPIO_PIN_6);
+  52   1        //
+  53   1        //获取初始状态，保存起来。
+C51 COMPILER V9.60.0.0   BSP_ENCODER                                                       06/05/2023 23:10:09 PAGE 2   
+
+  54   1        EC_B2_old = EC2_A;
+  55   1        EC_A2_old = EC2_B;
+  56   1      
+  57   1        EC_B1_old = EC1_A;
+  58   1        EC_A1_old = EC1_B;
+  59   1      
+  60   1      }
+  61          #if 1
+  62          
+  63          
+  64          
+  65          
+  66          /*********************************************
+  67          函数名：EncoderReading
+  68          功  能：读取编码器数据
+  69          形  参：
+  70          返回值：0--无动作 1--正转  2--反转
+  71          备  注：
+  72          作  者：薛建强
+  73          时  间：2019/06/11
+  74          **********************************************/
+  75          u8 EncoderReading_A(void)
+  76          {
+  77   1        /*捕获一次*/
+  78   1        EC_A1_Val = EC1_A;
+  79   1        EC_B1_Val = EC1_B;
+  80   1        /*************EC_B上升沿*******************/
+  81   1        if (EC_A1_Val == EC_A1_old && EC_B1_Val > EC_B1_old)
+  82   1          {
+  83   2            /*重新给旧值赋值*/
+  84   2            EC_B1_old = EC_B1_Val;
+  85   2            EC_A1_old = EC_A1_Val;
+  86   2            if (EC_A1_Val == 0) //反转
+  87   2              {
+  88   3                return 2;
+  89   3              }
+  90   2          }
+  91   1        /*************EC_B下升沿*******************/
+  92   1        if (EC_A1_Val == EC_A1_old && EC_B1_Val < EC_B1_old)
+  93   1          {
+  94   2            /*重新给旧值赋值*/
+  95   2            EC_B1_old = EC_B1_Val;
+  96   2            EC_A1_old = EC_A1_Val;
+  97   2            if (EC_A1_Val == 1) //反转
+  98   2              {
+  99   3                return 2;
+ 100   3              }
+ 101   2          }
+ 102   1        /*************EC_A上升沿*******************/
+ 103   1        if (EC_B1_Val == EC_B1_old && EC_A1_Val > EC_A1_old)
+ 104   1          {
+ 105   2            /*重新给旧值赋值*/
+ 106   2            EC_B1_old = EC_B1_Val;
+ 107   2            EC_A1_old = EC_A1_Val;
+ 108   2            if (EC_B1_Val == 0) //正转
+ 109   2              {
+ 110   3                return 1;
+ 111   3              }
+ 112   2          }
+ 113   1        /*************EC_A下升沿*******************/
+ 114   1        if (EC_B1_Val == EC_B1_old && EC_A1_Val < EC_A1_old)
+ 115   1          {
+C51 COMPILER V9.60.0.0   BSP_ENCODER                                                       06/05/2023 23:10:09 PAGE 3   
+
+ 116   2            /*重新给旧值赋值*/
+ 117   2            EC_B1_old = EC_B1_Val;
+ 118   2            EC_A1_old = EC_A1_Val;
+ 119   2            if (EC_B1_Val == 1) //正转
+ 120   2              {
+ 121   3                return 1;
+ 122   3              }
+ 123   2          }
+ 124   1        return 0;
+ 125   1      }
+ 126          ////////////////////////////
+ 127          u8 EncoderReading_B(void)
+ 128          {
+ 129   1        /*捕获一次*/
+ 130   1        EC_A2_Val = EC2_A;
+ 131   1        EC_B2_Val = EC2_B;
+ 132   1        /*************EC_B上升沿*******************/
+ 133   1        if (EC_A2_Val == EC_A2_old && EC_B2_Val > EC_B2_old)
+ 134   1          {
+ 135   2            /*重新给旧值赋值*/
+ 136   2            EC_B2_old = EC_B2_Val;
+ 137   2            EC_A2_old = EC_A2_Val;
+ 138   2            if (EC_A2_Val == 0) //反转
+ 139   2              {
+ 140   3                return 2;
+ 141   3              }
+ 142   2          }
+ 143   1        /*************EC_B下升沿*******************/
+ 144   1        if (EC_A2_Val == EC_A2_old && EC_B2_Val < EC_B2_old)
+ 145   1          {
+ 146   2            /*重新给旧值赋值*/
+ 147   2            EC_B2_old = EC_B2_Val;
+ 148   2            EC_A2_old = EC_A2_Val;
+ 149   2            if (EC_A2_Val == 1) //反转
+ 150   2              {
+ 151   3                return 2;
+ 152   3              }
+ 153   2          }
+ 154   1        /*************EC_A上升沿*******************/
+ 155   1        if (EC_B2_Val == EC_B2_old && EC_A2_Val > EC_A2_old)
+ 156   1          {
+ 157   2            /*重新给旧值赋值*/
+ 158   2            EC_B2_old = EC_B2_Val;
+ 159   2            EC_A2_old = EC_A2_Val;
+ 160   2            if (EC_B2_Val == 0) //正转
+ 161   2              {
+ 162   3                return 1;
+ 163   3              }
+ 164   2          }
+ 165   1        /*************EC_A下升沿*******************/
+ 166   1        if (EC_B2_Val == EC_B2_old && EC_A2_Val < EC_A2_old)
+ 167   1          {
+ 168   2            /*重新给旧值赋值*/
+ 169   2            EC_B2_old = EC_B2_Val;
+ 170   2            EC_A2_old = EC_A2_Val;
+ 171   2            if (EC_B2_Val == 1) //正转
+ 172   2              {
+ 173   3                return 1;
+ 174   3              }
+ 175   2          }
+ 176   1        return 0;
+ 177   1      }
+C51 COMPILER V9.60.0.0   BSP_ENCODER                                                       06/05/2023 23:10:09 PAGE 4   
+
+ 178          
+ 179          
+ 180          //////////////////
+ 181          void encoder_a(void)
+ 182          {
+ 183   1        //使用方式：
+ 184   1        KEY_state_A = EncoderReading_A(); //编码器调光度
+ 185   1        switch (KEY_state_A)
+ 186   1          {
+ 187   2          case 1://正转
+ 188   2            BitDisplayData_chang = 1;
+ 189   2      
+ 190   2            //输出通道等级
+ 191   2            if(VarOutCnt>4)
+ 192   2              {
+ 193   3                VarOutCnt = 1;
+ 194   3              }
+ 195   2            else
+ 196   2              {
+ 197   3                VarOutCnt ++;
+ 198   3              }
+ 199   2            //
+ 200   2            BitDataCharg = 1;
+ 201   2            //
+ 202   2            break;
+ 203   2          case 2://反转
+ 204   2            BitDisplayData_chang = 1;
+ 205   2            if(VarOutCnt <= 1)
+ 206   2              {
+ 207   3                VarOutCnt = 4;
+ 208   3              }
+ 209   2            else
+ 210   2              {
+ 211   3                VarOutCnt --;
+ 212   3              }
+ 213   2            //
+ 214   2            BitDataCharg = 1;
+ 215   2            //
+ 216   2            break;
+ 217   2          default :
+ 218   2            /* 可选的 */
+ 219   2            break;
+ 220   2      
+ 221   2          }
+ 222   1      }
+ 223          void encoder_b(void)
+ 224          {
+ 225   1      
+ 226   1        //使用方式：
+ 227   1        KEY_state_B = EncoderReading_B(); //编码器
+ 228   1        if(BitVoiceMute)  return ;        //静音时退出。
+ 229   1        //
+ 230   1        switch (KEY_state_B)
+ 231   1          {
+ 232   2          case 1://正转
+ 233   2            BitDisplayData_chang = 1;     //数据有更改标志位置1
+ 234   2            BitUpData_chang = 1;
+ 235   2            BitData_Astrict_R = 0;
+ 236   2            if(VarVoiceLevel == 1)
+ 237   2              {
+ 238   3                VarVoiceLevel =1;
+ 239   3              }
+C51 COMPILER V9.60.0.0   BSP_ENCODER                                                       06/05/2023 23:10:09 PAGE 5   
+
+ 240   2            else
+ 241   2              {
+ 242   3                VarVoiceLevel--;
+ 243   3              }
+ 244   2            //save_VoiceLevel();
+ 245   2            BitDataCharg = 1;
+ 246   2            break;
+ 247   2          case 2://反转
+ 248   2            BitDisplayData_chang = 1;
+ 249   2            BitUpData_chang = 1;
+ 250   2            //
+ 251   2            BitData_Astrict_F =0;
+ 252   2      
+ 253   2            if(VarVoiceLevel >= 254)
+ 254   2              {
+ 255   3                VarVoiceLevel =254;
+ 256   3              }
+ 257   2            else
+ 258   2              {
+ 259   3                VarVoiceLevel++;
+ 260   3              }
+ 261   2            //
+ 262   2            BitDataCharg = 1;
+ 263   2            //save_VoiceLevel();
+ 264   2            break;
+ 265   2          default :
+ 266   2            /* 可选的 */
+ 267   2            break;
+ 268   2          }
+ 269   1      }
+ 270          
+ 271          
+ 272          /*
+ 273          *********************************************************************************************************
+ 274          * 函 数 名: Scan_encodeer_a
+ 275          * 功能说明: 编码器独立按键
+ 276          * 形    参: 无
+ 277          * 返 回 值: 无
+ 278          *********************************************************************************************************
+ 279          */
+ 280          void Scan_encodeer_a(void)
+ 281          {
+ 282   1        static u8   VarK1PressCnt;
+ 283   1        static u8   VarK1ReleaseCnt;
+ 284   1        if(EC1_SW == 0)
+ 285   1          {
+ 286   2            //按下
+ 287   2            VarK1ReleaseCnt = 0;
+ 288   2            //
+ 289   2            VarK1PressCnt ++;
+ 290   2            if(VarK1PressCnt > 3)
+ 291   2              {
+ 292   3                VarK1PressCnt--;
+ 293   3                if(BitK1LastStatus == 0)
+ 294   3                  {
+ 295   4                    BitK1LastStatus = 1;
+ 296   4                    BitDisplayData_chang = 1;   //显示更新标志
+ 297   4                    //
+ 298   4                    BitDataCharg = 1;           //数据保存更新标志
+ 299   4                    if(VarINCnt >= 2)
+ 300   4                      {
+ 301   5                        VarINCnt = 1;
+C51 COMPILER V9.60.0.0   BSP_ENCODER                                                       06/05/2023 23:10:09 PAGE 6   
+
+ 302   5                      }
+ 303   4                    else
+ 304   4                      {
+ 305   5                        VarINCnt ++;
+ 306   5                      }
+ 307   4                  }
+ 308   3              }
+ 309   2          }
+ 310   1        else
+ 311   1          {
+ 312   2            //如果按键释放
+ 313   2            VarK1PressCnt = 0 ;
+ 314   2            if(++VarK1ReleaseCnt >= 3)
+ 315   2              {
+ 316   3                --VarK1ReleaseCnt ;
+ 317   3                BitK1LastStatus = 0 ;
+ 318   3              }
+ 319   2          }
+ 320   1      }
+ 321          /*
+ 322          *********************************************************************************************************
+ 323          * 函 数 名: Scan_encodeer_b
+ 324          * 功能说明: 编码器独立按键
+ 325          * 形    参: 无
+ 326          * 返 回 值: 无
+ 327          *********************************************************************************************************
+ 328          */
+ 329          void Scan_encodeer_b(void)
+ 330          {
+ 331   1        static u8   VarK2PressCnt;
+ 332   1        static u8   VarK2ReleaseCnt;
+ 333   1        if(EC2_SW == 0)
+ 334   1          {
+ 335   2            //按下
+ 336   2            VarK2ReleaseCnt = 0;
+ 337   2            //
+ 338   2            VarK2PressCnt ++;
+ 339   2            if(VarK2PressCnt >= 3)
+ 340   2              {
+ 341   3                VarK2PressCnt--;
+ 342   3                if(BitK2LastStatus == 0)
+ 343   3                  {
+ 344   4                    BitK2LastStatus = 1;
+ 345   4                    BitDisplayData_chang = 1;
+ 346   4                    //控制禁用音频
+ 347   4                    BitVoiceMute = ~BitVoiceMute;
+ 348   4                  }
+ 349   3              }
+ 350   2          }
+ 351   1        else
+ 352   1          {
+ 353   2            //如果按键释放
+ 354   2            VarK2PressCnt = 0 ;
+ 355   2            if(++VarK2ReleaseCnt >= 3)
+ 356   2              {
+ 357   3                --VarK2ReleaseCnt ;
+ 358   3                BitK2LastStatus = 0 ;
+ 359   3              }
+ 360   2          }
+ 361   1      
+ 362   1      }
+ 363          
+C51 COMPILER V9.60.0.0   BSP_ENCODER                                                       06/05/2023 23:10:09 PAGE 7   
+
+ 364          
+ 365          
+ 366          #endif
+ 367          ////////////////////////////////////////////////////////////////
+ 368          #if 0
+              u8 xdata BitBmEn_b;
+              u8 xdata BitBmInfo_b ;
+              u8 xdata BitBmEn_a;
+              u8 xdata BitBmInfo_a ;
+              //
+              u8 xdata BitTEST;
+              
+              void encoder_a()
+              {
+                u8 i = 0;
+                //
+                static u8 CurrentCode_a,LastCode_a,Codecnt_a;
+                //
+                if(EC1_A) i|= 0x01;
+                if(EC1_B) i|= 0x02;
+                //
+                if(CurrentCode_a != i)
+                  {
+                    CurrentCode_a = i;
+                    Codecnt_a = 30;
+                  }
+                if(Codecnt_a)Codecnt_a--;
+                else
+                  {
+                    //  if(BitBmEn_a == 0)
+                    {
+                      if(CurrentCode_a == 3)
+                        {
+                          if(LastCode_a == 1)
+                            {
+                              BitBmEn_a = 1;
+                              BitBmInfo_a = 0;
+                            }
+                          else if (LastCode_a == 2)
+                            {
+                              BitBmEn_a = 1;
+                              BitBmInfo_a = 1;
+                            }
+                        }
+                      LastCode_a = CurrentCode_a;
+                    }
+                  }
+              
+              }
+              
+              void encoder_b()
+              {
+                u8 i = 0;
+                //
+                static u8 CurrentCode_b,LastCode_b,Codecnt_b;
+                //
+                if(EC2_A) i|= 0x01;
+                if(EC2_B) i|= 0x02;
+                //
+                if(CurrentCode_b != i)
+                  {
+                    CurrentCode_b = i;
+C51 COMPILER V9.60.0.0   BSP_ENCODER                                                       06/05/2023 23:10:09 PAGE 8   
+
+                    Codecnt_b = 30;
+                  }
+                if(Codecnt_b)Codecnt_b--;
+                else
+                  {
+                    //if(BitBmEn_b == 0)
+                    {
+                      if(CurrentCode_b == 3)
+                        {
+                          if(LastCode_b == 1)
+                            {
+                              BitBmEn_b = 1;
+                              BitBmInfo_b = 0;
+                            }
+                          else if (LastCode_b == 2)
+                            {
+                              BitBmEn_b = 1;
+                              BitBmInfo_b = 1;
+                            }
+                        }
+                      LastCode_b = CurrentCode_b;
+                    }
+                  }
+              
+              }
+              void encoder_a_ctrl()
+              {
+                if(BitBmEn_a)
+                  {
+                    BitBmEn_a = 0;
+                    if(BitBmInfo_a)
+                      {
+                        BitTEST = 1;
+                      }
+                    else
+                      {
+                        BitTEST =2;
+                      }
+                  }
+              }
+              u8 BitTESTb;
+              
+              void encoder_b_ctrl()
+              {
+                if(BitBmEn_b)
+                  {
+                    BitBmEn_b = 0;
+                    if(BitBmInfo_b)
+                      {
+                        BitTESTb = 1;
+                      }
+                    else
+                      {
+                        BitTESTb =2;
+                      }
+                  }
+              }
+              #endif
+ 484          
+ 485          
+
+
+C51 COMPILER V9.60.0.0   BSP_ENCODER                                                       06/05/2023 23:10:09 PAGE 9   
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    609    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     16    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

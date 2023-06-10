@@ -1,0 +1,645 @@
+C51 COMPILER V9.60.0.0   BSP_IR                                                            06/05/2023 23:10:08 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE BSP_IR
+OBJECT MODULE PLACED IN .\Objects\bsp_ir.obj
+COMPILER INVOKED BY: C:\Tools\MDK\C51\BIN\C51.EXE ..\code\bsp_ir.c OMF2 OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Libary\Device
+                    -\CMS8S6990\Include;..\Libary\StdDriver\inc;..\code) DEBUG PRINT(.\Listings\bsp_ir.lst) TABS(2) OBJECT(.\Objects\bsp_ir.o
+                    -bj)
+
+line level    source
+
+   1          /*********************************************************************************************************
+   2          *
+   3          *   Ä£¿éÃû³Æ : IRÇý¶¯Ä£¿é
+   4          *   Ëµ    Ã÷ : 100US ¶¨Ê±Æ÷ÖÐµ÷ÓÃ¡£
+   5          *********************************************************************************************************/
+   6          #include "all.h"
+   7          
+   8          //¶¨ÒåµÄ±äÁ¿
+   9          u8  VarIRRxData[ConIRRxDataCout];             //½ÓÊÕÊý¾ÝBUF
+  10          
+  11          bit BitIRRXPress;
+  12          bit BitIRRX_9MS;                              //9MSµÍµçÆ½½ÓÊÕÍê³É±êÖ¾
+  13          bit BitIRRX_4D5MS;                            //4.5MS¸ßµçÆ½½ÓÊÕÍê³É±êÖ¾
+  14          bit BitIRRX_DUP;                                        //ÖØ¸´Âë±êÖ¾.
+  15          bit BitIRRX_FREE;                                       //IR½ÓÊÕ½øÐÐ±êÖ¾  1:ÕýÔÚ½ÓÊÕÖÐ
+  16          bit BitIRRX_FINISH;                                     //½ÓÊÕÍê³É±êÖ¾
+  17          bit BitIRRX_LEVEL;
+  18          u8 VarIRRX_DATA;
+  19          u8 VarIRRX_CNT;                                         //;IR½ÓÊÕÊý¾Ý¼ÆÊý,×Ü¹²4×Ö½Ú,32bit.
+  20          u8 VarIRRX_TIME;                                        //;IR½ÓÊÕÊ±¼ä¼ÆÊý.
+  21          u8  VarIRRxBitCnt;
+  22          //
+  23          u8 Var_IR_RX_PRESS_TIME;
+  24          u8 Var_IR_RX_RELEASE_TIME;
+  25          bit Bit_IR_RX_LONG_PRESS;
+  26          bit BitIRRXPress;
+  27          u8 vattestcnt;
+  28          xdata u8 BitVoiceLevelBack;
+  29          //
+  30          void IR_Init()
+  31          {
+  32   1        GPIO_SET_MUX_MODE(P04CFG, GPIO_MUX_GPIO);
+  33   1        GPIO_ENABLE_INPUT(P0TRIS, GPIO_PIN_4);
+  34   1      }
+  35          
+  36          void IR_RX(void)
+  37          {
+  38   1        //
+  39   1        if (!BitIRRX_FREE)                                  //ÊÇ·ñÊÇÊÍ·Å×´Ì¬
+  40   1          {
+  41   2            if (!P_IR_RX)                                   //µÍµçÆ½Æô¶¯
+  42   2              {
+  43   3                //
+  44   3                VarIRRX_DATA = 0;                           //±£´æµÄÊý¾Ý
+  45   3                //
+  46   3                BitIRRX_LEVEL = 0;
+  47   3                //
+  48   3                VarIRRX_TIME = 0;                           //¼ÆÊýÊ±¼ä
+  49   3                BitIRRX_9MS = 0;
+  50   3                BitIRRX_4D5MS = 0;
+  51   3                BitIRRX_DUP = 0;
+  52   3                BitIRRX_FINISH = 0;
+  53   3                VarIRRX_CNT  = 0;                           //32bit -4¸ö×Ö½Ú
+C51 COMPILER V9.60.0.0   BSP_IR                                                            06/05/2023 23:10:08 PAGE 2   
+
+  54   3                VarIRRxBitCnt = 0;
+  55   3                //
+  56   3                BitIRRX_FREE  = 1;                          //ÖÃ1--;½ÓÊÕµ½µÍµçÆ½,Æô¶¯½ÓÊÕ
+  57   3      
+  58   3              }
+  59   2          }
+  60   1        else
+  61   1          {
+  62   2            if(BitIRRX_DUP)                   //ÖØ¸´Âë±êÖ¾Î»
+  63   2              {
+  64   3                //
+  65   3                if (P_IR_RX == 0)                                   //µçÆ½Ò»Ö±ÎªµÍ
+  66   3                  {
+  67   4                    if (++VarIRRX_TIME >= ConIRRXLOW_OVER)            //ÇÒ´óÓÚOVERÊ±¼ä£¬ÊÍ·Å
+  68   4                      {
+  69   5                        BitIRRX_FREE = 0;
+  70   5                        return ;                                    //ÍË³ö
+  71   5                      }
+  72   4                  }
+  73   3              }
+  74   2            else if (BitIRRX_4D5MS)                                 //Êý¾Ý
+  75   2              {
+  76   3                if (BitIRRX_FINISH)                                 //½ÓÊÕ³É¹¦ºó,Èç¹û½ÓÊÕµ½µçÆ½.Ç¿ÖÆÊÍ·Å½ÓÊÕ×´Ì¬
+             -.
+  77   3                  {
+  78   4                    if (!P_IR_RX)
+  79   4                      {
+  80   5                        if (VarIRRX_TIME >= ConIRRXLOW_OVER)        //Ç¿ÖÆÊÍ·Å½ÓÊÕ×´Ì¬.
+  81   5                          {
+  82   6                            BitIRRX_FREE = 0;
+  83   6                            return ;                                //ÍË³ö
+  84   6                          }
+  85   5                      }
+  86   4                    else
+  87   4                      {
+  88   5                        BitIRRX_FREE = 0;
+  89   5                        return ;                                   //ÍË³ö
+  90   5                      }
+  91   4                  }
+  92   3                else                                               //32¸öbitÊý¾Ý ½ÓÊÕ´¦Àí
+  93   3                  {
+  94   4                    if (P_IR_RX)
+  95   4                      {
+  96   5                        if (!BitIRRX_LEVEL)                       //µçÆ½×´Ì¬±êÖ¾Î»
+  97   5                          {
+  98   6                            BitIRRX_LEVEL = 1;                    //µÍµçÆ½±ä¸ßµçÆ½µÄÊ±ºò,Çå³ýÊ±¼ä¼ÆÊý,ÖØÐÂ¿ªÊ¼¼Æ
+             -¸ßµçÆ½Ê±¼ä
+  99   6                            VarIRRX_TIME = 0;
+ 100   6                          }
+ 101   5      
+ 102   5                        VarIRRX_TIME ++;
+ 103   5      
+ 104   5                        if (VarIRRX_TIME >= ConIRRXHIGH_OVER)       //Èç¹û¸ßµçÆ½Ê±¼ä³¬¹ý,   ËµÃ÷½ÓÊÕÊý¾Ý´íÎó,Ç¿Ö
+             -ÆÊÍ·Å½ÓÊÕ×´Ì¬.
+ 105   5                          {
+ 106   6                            BitIRRX_FREE = 0;                       //ÊÍ·Å
+ 107   6                            //
+ 108   6                            return ;                                //ÍË³ö
+ 109   6                          }
+ 110   5                      }
+ 111   4                    else                                            //×´Ì¬×ª³ÉLµçÆ½Ê±£¬ÔÙÅÐ¶ÏÊý¾ÝÊÇ 1»¹ÊÇ0
+ 112   4                      {
+C51 COMPILER V9.60.0.0   BSP_IR                                                            06/05/2023 23:10:08 PAGE 3   
+
+ 113   5                        if (BitIRRX_LEVEL)                          //
+ 114   5                          {
+ 115   6                            BitIRRX_LEVEL = 0;
+ 116   6                            //
+ 117   6                            //ÅÐ¶ÏÊý¾Ý
+ 118   6                            VarIRRX_DATA = VarIRRX_DATA >> 1;       //´ÓµÍÎ»¿ªÊ¼½ÓÊÕ£¬ÓÒÒÆÒ»Î»
+ 119   6      
+ 120   6                            if (VarIRRX_TIME  > ConIR_RX_01)        //Ê±¼ä>1ms,ËµÃ÷½ÓÊÕµ½¸ßµçÆ½,
+ 121   6                              {
+ 122   7                                VarIRRX_DATA  |= 0x80;
+ 123   7                              }
+ 124   6      
+ 125   6                            //
+ 126   6                            VarIRRxBitCnt++;                                        //
+ 127   6      
+ 128   6                            if (VarIRRxBitCnt >= 8)
+ 129   6                              {
+ 130   7                                VarIRRxBitCnt = 0;
+ 131   7                                //
+ 132   7                                VarIRRxData[VarIRRX_CNT] = VarIRRX_DATA;
+ 133   7      
+ 134   7                                if (++VarIRRX_CNT >= 4)         //32¸ö×Ö½Ú½ÓÊÕÍê±Ï
+ 135   7                                  {
+ 136   8                                    VarIRRX_CNT = 0;
+ 137   8      
+ 138   8                                    if ((VarIRRxData[0] == 0xB2) && (VarIRRxData[1] == 0x4D))   //ÅÐ¶ÏÊý¾Ý
+ 139   8                                      {
+ 140   9                                        BitIRRX_FINISH = 1;                         //½ÓÊÕÍê³É
+ 141   9                                      }
+ 142   8      
+ 143   8                                    return ;                                                    //ÍË³öÑ­»·
+ 144   8      
+ 145   8                                  }
+ 146   7                              }
+ 147   6      
+ 148   6                            VarIRRX_TIME    =   0;
+ 149   6                          }
+ 150   5      
+ 151   5                        //
+ 152   5                        VarIRRX_TIME ++;
+ 153   5      
+ 154   5                        if (VarIRRX_TIME >= ConIRRXLOW_OVER)    //µÍµçÆ½Ê±¼ä¼ÆÊý+1
+ 155   5                          {
+ 156   6                            BitIRRX_FREE = 0;                   //>0.5ms--Ç¿ÖÆÊÍ·Å
+ 157   6                            return ;                            //ÍË³ö
+ 158   6                          }
+ 159   5                      }
+ 160   4      
+ 161   4      
+ 162   4                  }
+ 163   3              }
+ 164   2            else if (BitIRRX_9MS)
+ 165   2              {
+ 166   3                //4.5MS
+ 167   3                if (P_IR_RX)                                 //¸ßµçÆ½½øÈë
+ 168   3                  {
+ 169   4                    VarIRRX_TIME ++;                         //½ÓÊÕµ½¸ßµçÆ½,µÍµçÆ½¼ÆÊýÊ±¼ä+1
+ 170   4                    //
+ 171   4                    if (VarIRRX_TIME >= ConIRRxOVER_4D5ms)  //Ç¿ÖÆÊÍ·Å½ÓÊÕ×´Ì¬.
+ 172   4                      {
+ 173   5                        BitIRRX_FREE = 0;                               //
+ 174   5                        return ;                            //ÍË³ö
+C51 COMPILER V9.60.0.0   BSP_IR                                                            06/05/2023 23:10:08 PAGE 4   
+
+ 175   5                      }
+ 176   4                  }
+ 177   3                else                                                                    //
+ 178   3                  {
+ 179   4                    if (VarIRRX_TIME < ConIR_RX_DUP)        //½ÓÊÕÊ±¼äÐ¡ÓÚ2.6ms,ËµÃ÷½ÓÊÕÊý¾ÝÊÇÖØ¸´Âë
+ 180   4                      {
+ 181   5                        BitIRRX_DUP = 1;                    //Èç¹û½ÓÊÕµ½¸ßµçÆ½Ê±Ç¿ÖÆÊÍ·Å,9msºÍ4.5ms½ÓÊÕÕý³£,²¢ÇÒ
+             -Ã»ÓÐ½ÓÊÕµ½Êý¾Ý,ÈÏÎª½ÓÊÕµ½ÖØ¸´Âë.
+ 182   5                        VarIRRX_TIME = 0;
+ 183   5                      }
+ 184   4                    else if (VarIRRX_TIME > ConIRRx_4D5ms)
+ 185   4                      {
+ 186   5      
+ 187   5                        BitIRRX_4D5MS  = 1;                 //½ÓÊÕÊ±¼ä>4.5ms,ËµÃ÷4.5MSÊ±¼ä½ÓÊÕÕýÈ·.
+ 188   5                        VarIRRX_TIME = 0;
+ 189   5      
+ 190   5                      }
+ 191   4                    else
+ 192   4                      {
+ 193   5                        BitIRRX_FREE = 0;                               //Ç¿ÖÆÊÍ·Å
+ 194   5                        return ;                            //ÍË³ö
+ 195   5                      }
+ 196   4                  }
+ 197   3              }
+ 198   2            else
+ 199   2              {
+ 200   3                //;½ÓÊÕ9msµÍµçÆ½.
+ 201   3                if (!P_IR_RX)                                                   //µÍµçÆ½½øÈë
+ 202   3                  {
+ 203   4                    VarIRRX_TIME ++;                                        //½ÓÊÕµ½µÍµçÆ½,µÍµçÆ½¼ÆÊýÊ±¼ä+1
+ 204   4                    //
+ 205   4                    if (VarIRRX_TIME >= ConIRRxOVER_9ms) //Ç¿ÖÆÊÍ·Å½ÓÊÕ×´Ì¬.
+ 206   4                      {
+ 207   5                        BitIRRX_FREE = 0;                               //
+ 208   5                        return ;                            //ÍË³ö
+ 209   5                      }
+ 210   4                  }
+ 211   3                else                                                                  //µçÆ½×´Ì¬Îª¸ß--´ËÊ±ÅÐ¶ÏVa
+             -rIRRX_TIME
+ 212   3                  {
+ 213   4                    if (VarIRRX_TIME >   ConIRRx_9ms)       //½ÓÊÕÊ±¼ä>8.5ms,ËµÃ÷9MSÊ±¼ä½ÓÊÕÕýÈ·.
+ 214   4                      {
+ 215   5                        VarIRRX_TIME = 0;
+ 216   5                        BitIRRX_9MS = 1;
+ 217   5                      }
+ 218   4                    else                                                            //½ÓÊÕÊ±¼äÐ¡ÓÚ8.5ms,ËµÃ÷½ÓÊÕ
+             -Êý¾Ý´íÎó,Ç¿ÖÆÊÍ·Å½ÓÊÕ×´Ì¬
+ 219   4                      {
+ 220   5                        BitIRRX_FREE = 0;
+ 221   5                        return ;                            //ÍË³ö
+ 222   5                      }
+ 223   4                  }
+ 224   3              }
+ 225   2          }
+ 226   1      }
+ 227          
+ 228          /*============================================================================
+ 229          *ºìÍâ½ÓÊÕ´¦Àí
+ 230          ÓÉºìÍâ½ÓÊÕ³ÌÐò´«µÝµÄ±êÖ¾ F_IR_RX_FINISH, F_IR_RX_DUP ÅÐ¶Ï°´¼ü×´Ì¬.
+ 231          ;ÓÉºìÍâ½ÓÊÕ³ÌÐò´«µÝµÄÊý¾Ý R_IR_RX_DATA1( ÓÃ»§Âë )   R_IR_RX_DATA3( Êý¾Ý )ÅÐ¶Ï°´¼üÎ»ºÅ.
+ 232          ============================================================================*/
+ 233          
+C51 COMPILER V9.60.0.0   BSP_IR                                                            06/05/2023 23:10:08 PAGE 5   
+
+ 234          void IRReceiveCTRL(void)
+ 235          {
+ 236   1        u8  tmp1;
+ 237   1        u8  IR_RX_VALUE;
+ 238   1        //
+ 239   1        if(++Var_IR_RX_PRESS_TIME >= 255)   //³¤°´¼ÆÊýÊ±¼ä+1
+ 240   1          Var_IR_RX_PRESS_TIME --;
+ 241   1        //
+ 242   1        if (BitIRRX_FINISH)                //¼ì²âºìÍâ°´ÏÂ.½øÈëµÚÒ»´ÎºìÍâ½ÓÊÕ´¦Àí.  ºìÍâÖ»ÊÇµÚÒ»´Î²ÅÓÐÊý¾Ý.
+ 243   1          {
+ 244   2            BitIRRX_FINISH = 0;
+ 245   2            //
+ 246   2            //ÑéÖ¤Êý¾ÝÊÇ·ñÊ±ÕýÈ·
+ 247   2            tmp1 = VarIRRxData[3] ^ 0xFF;
+ 248   2      
+ 249   2            if (VarIRRxData[2] == tmp1)
+ 250   2              {
+ 251   3                Var_IR_RX_RELEASE_TIME = 0;   //½ÓÊÕÊÍ·ÅÊ±¼äÇå0.
+ 252   3                Var_IR_RX_PRESS_TIME = 0;     //°´¼ü¼ÆÊýÊ±¼äÇå0.
+ 253   3                //
+ 254   3                BitIRRXPress = 1;             //ÖÃºìÍâ°´ÏÂ±êÖ¾
+ 255   3                IR_RX_VALUE =VarIRRxData[2] ;//ÓÃÁíÒ»¸ö±äÁ¿±£´æÊý¾Ý
+ 256   3                //
+ 257   3                BitDisplayData_chang = 1;
+ 258   3                //
+ 259   3                switch (IR_RX_VALUE)        //ÅÐ¶ÏÊý¾Ý
+ 260   3                  {
+ 261   4                  case 0xDC:                //IR¿ª¹Ø»ú
+ 262   4                    BitDisplayOn = ~BitDisplayOn;
+ 263   4      
+ 264   4                    //
+ 265   4                    if(BitDisplayOn)
+ 266   4                      {
+ 267   5                        SysStatus = 0;          //IR¿ª»úºó-- ÇÐ»»µ½µ¹¼ÆÊ±
+ 268   5                        VarAutoSet = 3;
+ 269   5                        VarAutoTimeCnt = 0;
+ 270   5                        VarDisplayUpdateCnt = 0;
+ 271   5                      }
+ 272   4                    else
+ 273   4                      {
+ 274   5                        BitDisplayData_chang = 1;
+ 275   5      
+ 276   5                      }//
+ 277   4                    break;
+ 278   4                  case 0x82:                //¾²Òô
+ 279   4                    if(BitDisplayOn)        //¿ªÆô×´Ì¬ÏÂ²ÅÄÜ½øÐÐ´Ë²Ù×÷
+ 280   4                      {
+ 281   5                        BitVoiceMute = ~BitVoiceMute;
+ 282   5                        BitDisplayData_chang = 1;
+ 283   5                      }
+ 284   4                    break;
+ 285   4                  case 0xCA:                //ÒôÁ¿µÈ¼¶¼Ó
+ 286   4                    if(BitDisplayOn)        //¿ªÆô×´Ì¬ÏÂ²ÅÄÜ½øÐÐ´Ë²Ù×÷
+ 287   4                      {
+ 288   5                        BitUpData_chang = 1;
+ 289   5                        BitData_Astrict_R = 0;
+ 290   5                        //
+ 291   5                        if(VarVoiceLevel>= 254)
+ 292   5                          {
+ 293   6                            VarVoiceLevel = 254;
+ 294   6                          }
+ 295   5                        else
+C51 COMPILER V9.60.0.0   BSP_IR                                                            06/05/2023 23:10:08 PAGE 6   
+
+ 296   5                          {
+ 297   6                            VarVoiceLevel++;
+ 298   6                          }
+ 299   5                        BitDataCharg = 1;
+ 300   5                      }
+ 301   4                    break;
+ 302   4                  case 0x80:
+ 303   4                    if(BitDisplayOn)        //¿ªÆô×´Ì¬ÏÂ²ÅÄÜ½øÐÐ´Ë²Ù×÷
+ 304   4                      {
+ 305   5                        BitUpData_chang = 1;
+ 306   5                        BitData_Astrict_R = 0;
+ 307   5                        //
+ 308   5                        if(VarVoiceLevel>= 254)
+ 309   5                          VarVoiceLevel = 254;
+ 310   5                        else
+ 311   5                          VarVoiceLevel++;
+ 312   5                        //
+ 313   5                        BitDataCharg = 1;
+ 314   5      
+ 315   5                      }
+ 316   4                    break;
+ 317   4      
+ 318   4                  case 0xD2:                //ÒôÁ¿µÈ¼¶¼õ
+ 319   4                    if(BitDisplayOn)        //¿ªÆô×´Ì¬ÏÂ²ÅÄÜ½øÐÐ´Ë²Ù×÷
+ 320   4                      {
+ 321   5                        BitUpData_chang = 1;
+ 322   5                        BitData_Astrict_F = 0;
+ 323   5                        if(VarVoiceLevel== 0)
+ 324   5                          {
+ 325   6                            VarVoiceLevel = 0;
+ 326   6                          }
+ 327   5                        else
+ 328   5                          {
+ 329   6                            VarVoiceLevel--;
+ 330   6                          }
+ 331   5                        BitDataCharg = 1;
+ 332   5      
+ 333   5                      }
+ 334   4                    break;
+ 335   4                  case 0x81:
+ 336   4                    if(BitDisplayOn)        //¿ªÆô×´Ì¬ÏÂ²ÅÄÜ½øÐÐ´Ë²Ù×÷
+ 337   4                      {
+ 338   5                        BitUpData_chang = 1;
+ 339   5                        BitData_Astrict_F = 0;
+ 340   5                        if(VarVoiceLevel== 0)
+ 341   5                          {
+ 342   6                            VarVoiceLevel = 0;
+ 343   6                          }
+ 344   5                        else
+ 345   5                          {
+ 346   6                            VarVoiceLevel--;
+ 347   6                          }
+ 348   5                        BitDataCharg = 1;
+ 349   5                      }
+ 350   4                    break;
+ 351   4                  case 0x99:                //ÊäÈë
+ 352   4                    if(BitDisplayOn)        //¿ªÆô×´Ì¬ÏÂ²ÅÄÜ½øÐÐ´Ë²Ù×÷
+ 353   4                      {
+ 354   5                        if(VarINCnt == 1)
+ 355   5                          {
+ 356   6                            VarINCnt = 2;
+ 357   6                          }
+C51 COMPILER V9.60.0.0   BSP_IR                                                            06/05/2023 23:10:08 PAGE 7   
+
+ 358   5                        else
+ 359   5                          {
+ 360   6                            VarINCnt --;
+ 361   6                          }
+ 362   5                        BitDataCharg = 1;
+ 363   5                      }
+ 364   4                    break;
+ 365   4      
+ 366   4                  case 0xC1:            //Êä³öÍ¨µÀµÈ¼¶
+ 367   4                    if(BitDisplayOn)        //¿ªÆô×´Ì¬ÏÂ²ÅÄÜ½øÐÐ´Ë²Ù×÷
+ 368   4                      {
+ 369   5                        if(VarINCnt == 2)
+ 370   5                          {
+ 371   6                            VarINCnt = 1;
+ 372   6                          }
+ 373   5                        else
+ 374   5                          {
+ 375   6                            VarINCnt ++;
+ 376   6                          }
+ 377   5                        BitDataCharg = 1;
+ 378   5      
+ 379   5      
+ 380   5                      }
+ 381   4                    break;
+ 382   4      
+ 383   4                  case 0xce:
+ 384   4                    if(BitDisplayOn)        //¿ªÆô×´Ì¬ÏÂ²ÅÄÜ½øÐÐ´Ë²Ù×÷
+ 385   4                      {
+ 386   5                        if(VarOutCnt>=4)
+ 387   5                          {
+ 388   6                            VarOutCnt = 1;
+ 389   6                          }
+ 390   5                        else
+ 391   5                          {
+ 392   6                            VarOutCnt ++;
+ 393   6                          }
+ 394   5                        BitDataCharg = 1;
+ 395   5                      }
+ 396   4                    break;
+ 397   4      
+ 398   4                  case 0xC5:                //ÇÐ»»»Øµ½³õÊ¼ÒôÁ¿µÈ¼¶
+ 399   4                    if(BitDisplayOn)        //¿ªÆô×´Ì¬ÏÂ²ÅÄÜ½øÐÐ´Ë²Ù×÷
+ 400   4                      {
+ 401   5                        BitVoiceLevelBack = 1;  //»ØÍË±êÖ¾Î»
+ 402   5                      }
+ 403   4                    break;
+ 404   4      
+ 405   4                  default:
+ 406   4                    break;
+ 407   4                  }
+ 408   3      
+ 409   3              }
+ 410   2      
+ 411   2          }
+ 412   1        else
+ 413   1          {
+ 414   2            //¼ì²âµ½ÖØ¸´Âë,½øÐÐÖØ¸´Âë´¦Àí,Ö÷Òª´¦Àí³¤°´¶¯×÷.
+ 415   2            if(BitIRRX_DUP)
+ 416   2              {
+ 417   3                BitIRRX_DUP = 0;
+ 418   3                //¼ì²âµ½ÖØ¸´ÂëÖ®Ç°±ØÐëÏÈ¼ì²âµ½ºìÍâÂë,·ñÔòÇ¿ÖÆÊÍ·Å.
+ 419   3                if(BitIRRXPress)
+C51 COMPILER V9.60.0.0   BSP_IR                                                            06/05/2023 23:10:08 PAGE 8   
+
+ 420   3                  {
+ 421   4                    Var_IR_RX_RELEASE_TIME = 0;     //½ÓÊÕÊÍ·ÅÊ±¼äÇå0
+ 422   4                    //
+ 423   4                    if(Var_IR_RX_PRESS_TIME >= 120 )//Ê±¼ä»ùÖµ 10ms
+ 424   4                      {
+ 425   5                        Var_IR_RX_PRESS_TIME --;
+ 426   5                        //
+ 427   5                        Bit_IR_RX_LONG_PRESS   = 1;   //³¤°´¶¯×÷±êÖ¾ÖÃ1
+ 428   5                        //
+ 429   5      //dup:
+ 430   5                        BitDisplayData_chang = 1;
+ 431   5                        switch(VarIRRxData[2])        //´Ë´¦Ìí¼Ó³¤°´¶¯×÷.
+ 432   5                          {
+ 433   6                          case 0xCA:                //ÒôÁ¿µÈ¼¶¼Ó
+ 434   6                            if(BitDisplayOn)        //¿ªÆô×´Ì¬ÏÂ²ÅÄÜ½øÐÐ´Ë²Ù×÷
+ 435   6                              {
+ 436   7                                BitUpData_chang = 1;
+ 437   7                                BitData_Astrict_R = 0;
+ 438   7                                //
+ 439   7                                if(VarVoiceLevel>= 254)
+ 440   7                                  VarVoiceLevel = 254;
+ 441   7                                else
+ 442   7                                  VarVoiceLevel++;
+ 443   7      
+ 444   7                                //save_VoiceLevel();
+ 445   7      
+ 446   7                              }
+ 447   6                            break;
+ 448   6                          case 0x80:
+ 449   6                            if(BitDisplayOn)        //¿ªÆô×´Ì¬ÏÂ²ÅÄÜ½øÐÐ´Ë²Ù×÷
+ 450   6                              {
+ 451   7                                BitUpData_chang = 1;
+ 452   7                                BitData_Astrict_R = 0;
+ 453   7                                //
+ 454   7                                if(VarVoiceLevel>= 254)
+ 455   7                                  VarVoiceLevel = 254;
+ 456   7                                else
+ 457   7                                  VarVoiceLevel++;
+ 458   7      
+ 459   7                                //save_VoiceLevel();
+ 460   7                              }
+ 461   6                            break;
+ 462   6      
+ 463   6                          case 0xD2:                //ÒôÁ¿µÈ¼¶¼õ
+ 464   6                            if(BitDisplayOn)        //¿ªÆô×´Ì¬ÏÂ²ÅÄÜ½øÐÐ´Ë²Ù×÷
+ 465   6                              {
+ 466   7                                BitUpData_chang = 1;
+ 467   7                                BitData_Astrict_F = 0;
+ 468   7                                if(VarVoiceLevel== 0)
+ 469   7                                  {
+ 470   8                                    VarVoiceLevel = 0;
+ 471   8                                  }
+ 472   7                                else
+ 473   7                                  {
+ 474   8                                    VarVoiceLevel--;
+ 475   8                                  }
+ 476   7                                //save_VoiceLevel();
+ 477   7      
+ 478   7                              }
+ 479   6                            break;
+ 480   6                          case 0x81:
+ 481   6                            if(BitDisplayOn)        //¿ªÆô×´Ì¬ÏÂ²ÅÄÜ½øÐÐ´Ë²Ù×÷
+C51 COMPILER V9.60.0.0   BSP_IR                                                            06/05/2023 23:10:08 PAGE 9   
+
+ 482   6                              {
+ 483   7                                BitUpData_chang = 1;
+ 484   7                                BitData_Astrict_F = 0;
+ 485   7                                if(VarVoiceLevel== 0)
+ 486   7                                  {
+ 487   8                                    VarVoiceLevel = 0;
+ 488   8                                  }
+ 489   7                                else
+ 490   7                                  {
+ 491   8                                    VarVoiceLevel--;
+ 492   8                                  }
+ 493   7                                //  save_VoiceLevel();
+ 494   7                              }
+ 495   6                            break;
+ 496   6      
+ 497   6                          default:
+ 498   6                            break;
+ 499   6                          }
+ 500   5      
+ 501   5                        //
+ 502   5                      }
+ 503   4                  }
+ 504   3              }
+ 505   2            else
+ 506   2              {
+ 507   3                if(BitIRRXPress)  //Èç¹ûÎÞ°´¼ü°´ÏÂ,ËµÃ÷´ËÊ±³öÓÚ¿ÕÏÐ×´Ì¬.ÅÐ¶Ï°´¼üÊÍ·Å.
+ 508   3                  {
+ 509   4                    if(++Var_IR_RX_RELEASE_TIME >= 21 )     //ºìÍâÊÍ·ÅÊ±¼ä  Ê±¼ä»ù×¼10ms
+ 510   4                      {
+ 511   5                        Var_IR_RX_RELEASE_TIME --;
+ 512   5      
+ 513   5                        //
+ 514   5                        BitIRRXPress = 0;                     //ÊÍ·ÅÊ±¼äµ½,Çå³ý±êÖ¾Î».
+ 515   5      
+ 516   5                      }
+ 517   4                    else
+ 518   4                      {
+ 519   5                        // goto dup;
+ 520   5                      }
+ 521   4                    /*  else                                    //ÓÉÓÚºìÍâ100ms½ÓÊÕÒ»´ÎÐÅºÅ,ËùÒÔ³¤°´È·ÈÏºó,ÔÚÃ»ÓÐÐÅºÅµÄÊ±ºòÒ²ÐèÒª½ø
+             -Èë³¤°´´¦Àí.
+ 522   4                      {
+ 523   4                            if(Bit_IR_RX_LONG_PRESS)          //ÓÐ³¤°´¶¯×÷,Ö±½Ó
+ 524   4                            {
+ 525   4                                switch(VarIRRxData[2])        //´Ë´¦Ìí¼Ó³¤°´¶¯×÷.
+ 526   4                                {
+ 527   4                                  case 0x45:vattestcnt =4;break;
+ 528   4      
+ 529   4                                    default:
+ 530   4                                  break;
+ 531   4                                }
+ 532   4                            }
+ 533   4                      }*/
+ 534   4                  }
+ 535   3                else
+ 536   3                  {
+ 537   4                    BitIRRXPress = 0;
+ 538   4                    Bit_IR_RX_LONG_PRESS = 0;
+ 539   4                    Var_IR_RX_RELEASE_TIME = 0;
+ 540   4                    Var_IR_RX_PRESS_TIME = 0;
+ 541   4      
+ 542   4                  }
+C51 COMPILER V9.60.0.0   BSP_IR                                                            06/05/2023 23:10:08 PAGE 10  
+
+ 543   3              }
+ 544   2          }
+ 545   1      }
+ 546          
+ 547          /*
+ 548          *********************************************************************************************************
+ 549          * º¯ Êý Ãû:VoiceLevelBack_Ctrl
+ 550          * ¹¦ÄÜËµÃ÷: IR  ¿ØÖÆ»ØÍËÒôÁ¿µÈ¼¶
+ 551          * ÐÎ    ²Î: ÎÞ
+ 552          * ·µ »Ø Öµ: ÎÞ
+ 553          *********************************************************************************************************
+ 554          */
+ 555          u8 VarBackTimeCnt;
+ 556          //
+ 557          void VoiceLevelBack_Ctrl(void)
+ 558          {
+ 559   1        if(BitVoiceLevelBack == 1)
+ 560   1          {
+ 561   2            if(VarBackTimeCnt >= 1)
+ 562   2              {
+ 563   3                VarBackTimeCnt =0;
+ 564   3                //
+ 565   3                BitDisplayData_chang = 1;
+ 566   3                BitUpData_chang = 1;
+ 567   3                //
+ 568   3                if(VarVoiceLevel ==1)
+ 569   3                  {
+ 570   4                    VarVoiceLevel = 1;
+ 571   4                    BitVoiceLevelBack = 0;
+ 572   4                  }
+ 573   3                else
+ 574   3                  {
+ 575   4                    VarVoiceLevel--;
+ 576   4                  }
+ 577   3                //
+ 578   3              }
+ 579   2            else
+ 580   2              {
+ 581   3                VarBackTimeCnt ++;
+ 582   3              }
+ 583   2          }
+ 584   1        else
+ 585   1          {
+ 586   2            VarBackTimeCnt = 0;
+ 587   2          }
+ 588   1      
+ 589   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    912    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      1    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     12    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      8    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+C51 COMPILER V9.60.0.0   BSP_IR                                                            06/05/2023 23:10:08 PAGE 11  
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

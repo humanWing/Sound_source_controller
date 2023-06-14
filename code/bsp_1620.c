@@ -16,6 +16,27 @@
 
 extern u16 xdata 		VarTimer100ms;
 u8 bai_num,shi_num,ge_num;
+
+#if 0
+static u8 code LED_tab[14][2]=   // 定义数码管0~9数字码表
+{
+  {0x3f, 0x00},    //0
+  {0x06, 0x00},
+  {0x5b, 0x08},
+  {0x4f, 0x08},
+  {0x66, 0x08},
+  {0x6d, 0x08},
+  {0x7d, 0x08},
+  {0x07, 0x00},
+  {0x7f, 0x08},
+  {0x6f, 0x08},   //9
+  {0x5e, 0x08},		//d 10
+  {0x30, 0x00},		//l 11
+  {0x6e, 0x08},		//y 12
+  {0x40, 0x08}		//- 13
+};
+
+#else
 static u8 code LED_tab[14]=   // 定义数码管0~9数字码表
 {
   0x3f,    //0
@@ -27,12 +48,32 @@ static u8 code LED_tab[14]=   // 定义数码管0~9数字码表
   0x7d,
   0x07,
   0x7f,
-  0x6f,    //9
+  0x6f,   //9
   0x5e,		//d 10
   0x30,		//l 11
   0x6e,		//y 12
-  0x40,		//- 13
+  0x40,	//- 13
 };
+
+static u8 code LED_tab1[14]=   // 定义数码管0~9数字码表
+{
+  0x00,    //0
+  0x00,
+  0x08,
+  0x08,
+  0x08,
+  0x08,
+  0x08,
+  0x00,
+  0x08,
+  0x08,   //9
+  0x08,		//d 10
+  0x00,		//l 11
+  0x08,		//y 12
+  0x08		//- 13
+};
+#endif
+
 #define dissetmode 			0x02 //显示模式设置 6位8段显示
 #define writedatamode_z 0x40 //自动加一方式显存 写数据到显示寄存器
 #define writeledmode_z 	0x41 //自动加一方式写LED显存命令
@@ -230,12 +271,15 @@ void display_1620(void)
   //
   Write_COM(dissetmode);       			//设置显示模式
   Write_COM(writedatamode_z);  			//自动模式 自动加1模式
-  //Write_COM(startaddress);
+  Write_COM(startaddress);
   //
   for(i=0; i<6; i++)    	 			 		//此处i变量为地址，相当于打开6个位选
     {
-      Write_COM(startaddress+i*2); 	//传地址
+      // Write_COM(startaddress+i*2); 	//传地址
+      // TM1620_Write(LED_tab[TM1620_temp[i]][0]);//传数据
+      // TM1620_Write(LED_tab[TM1620_temp[i]][1]);//传数据
       TM1620_Write(LED_tab[TM1620_temp[i]]);//传数据
+      TM1620_Write(LED_tab1[TM1620_temp[i]]);//传数据
     }
   Write_COM(disconmode);      	//显示控制命令
   STB=1;												//数据传输完毕，STB被拉高

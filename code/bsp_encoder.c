@@ -1,5 +1,6 @@
 #include "all.h"
 
+
 //IO电平轮询法驱动编码器
 
 
@@ -13,15 +14,13 @@ sbit 	 EC2_SW = P2^6;						//定义
 
 bit BitDisplayData_chang;
 
-//https://whycan.com/t_6692.html
 sbit EC_B1 = P0 ^ 0;   // 编码器 P0.0 端口
 sbit EC_A1 = P1 ^ 3;   // 编码器 P1.3 端口
 static uint8_t EC_A1_Val = 0, EC_B1_Val = 0;
 static uint8_t EC_A1_old = 0, EC_B1_old = 0;
 u8 KEY_state_A ;
-//
-sbit EC_B2 = P3 ^ 6;   // 编码器 P3.6 端口
-sbit EC_A2 = P0 ^ 5;   // 编码器 P0.5 端口
+
+
 static uint8_t EC_A2_Val = 0, EC_B2_Val = 0;
 static uint8_t EC_A2_old = 0, EC_B2_old = 0;
 u8 KEY_state_B;
@@ -185,41 +184,24 @@ void encoder_a(void)
   switch (KEY_state_A)
     {
     case 1://正转
+      eb_voice_output_channel = eb_voice_output_channel < 4 ? (eb_voice_output_channel+1) : 1;
       BitDisplayData_chang = 1;
+      BitDataCharg = 1;
+    break;
 
-      //输出通道等级
-      if(VarOutCnt>4)
-        {
-          VarOutCnt = 1;
-        }
-      else
-        {
-          VarOutCnt ++;
-        }
-      //
-      BitDataCharg = 1;
-      //
-      break;
     case 2://反转
+      eb_voice_output_channel = eb_voice_output_channel > 1 ? (eb_voice_output_channel-1) : 4;
       BitDisplayData_chang = 1;
-      if(VarOutCnt <= 1)
-        {
-          VarOutCnt = 4;
-        }
-      else
-        {
-          VarOutCnt --;
-        }
-      //
       BitDataCharg = 1;
-      //
-      break;
+    break;
+
     default :
       /* 可选的 */
       break;
 
     }
 }
+
 void encoder_b(void)
 {
 
@@ -230,38 +212,28 @@ void encoder_b(void)
   switch (KEY_state_B)
     {
     case 1://正转
-      BitDisplayData_chang = 1;			//数据有更改标志位置1
-      BitUpData_chang = 1;
-      BitData_Astrict_R = 0;
-      if(VarVoiceLevel == 1)
-        {
-          VarVoiceLevel =1;
-        }
-      else
-        {
-          VarVoiceLevel--;
-        }
-      //save_VoiceLevel();
-      BitDataCharg = 1;
-      break;
-    case 2://反转
-      BitDisplayData_chang = 1;
-      BitUpData_chang = 1;
-      //
-      BitData_Astrict_F =0;
+      
+      if(eb_voice_level > VOLUME_MIN_CLASS)
+      {
+          eb_voice_level--;
+      }
 
-      if(VarVoiceLevel >= 254)
-        {
-          VarVoiceLevel =254;
-        }
-      else
-        {
-          VarVoiceLevel++;
-        }
-      //
+      BitDisplayData_chang = 1;			//数据有更改标志位置1
+      eb_button_change_motor_sta = 1;
       BitDataCharg = 1;
-      //save_VoiceLevel();
-      break;
+    break;
+
+    case 2://反转
+      if(eb_voice_level < VOLUME_MAX_CLASS)
+      {
+          eb_voice_level++;
+      }
+  
+      BitDisplayData_chang = 1;
+      eb_button_change_motor_sta = 1;
+      BitDataCharg = 1;
+    break;
+
     default :
       /* 可选的 */
       break;
@@ -296,13 +268,13 @@ void Scan_encodeer_a(void)
               BitDisplayData_chang = 1;		//显示更新标志
               //
               BitDataCharg = 1;						//数据保存更新标志
-              if(VarINCnt >= 2)
+              if(eb_voice_input_channel >= 2)
                 {
-                  VarINCnt = 1;
+                  eb_voice_input_channel = 1;
                 }
               else
                 {
-                  VarINCnt ++;
+                  eb_voice_input_channel ++;
                 }
             }
         }

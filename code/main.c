@@ -50,9 +50,9 @@ u8 xdata 		BitTimer10ms;
 u8 xdata 		VarTimer10ms;
 u16 xdata VarWirtFlashCnt;
 //
-u8 xdata VarINCnt;				//输入通道
-u8 xdata VarOutCnt;				//输出通道
-u8 xdata VarVoiceLevel;		//音频等级
+u8 xdata eb_voice_input_channel;				//输入通道
+u8 xdata eb_voice_output_channel;				//输出通道
+u8 xdata eb_voice_level;		//音频等级
 u8 xdata BitVoice_En;			//使能标志
 
 u8 xdata SysStatus;				//系统状态
@@ -197,50 +197,34 @@ void WDT_Config(void)
 
 int main(void)
 {
-//	u8 i,Vartemp;
-  //
-  TMR0_Config();				//定时器初始化
-  //
   encoder_init();				//编码器初始化
   init_TM1620();				//显示
-  adc_config();					//adc初始化
   IR_Init();						//IR初始化
-  //
   mt_init();					  //马达驱动
   out_init();						//输入输出通道设置
-  //
-  //FLASH_Erase(FLASH_DATA,0);//擦除数据
-  //FLASH_Erase(FLASH_DATA,1);
-  //FLASH_Erase(FLASH_DATA,2);
-  //FLASH_Erase(FLASH_DATA,3);
-  //FLASH_Erase(FLASH_DATA,4);
-  //First_ReadData();			//读取保存数据
-  //
+  First_ReadData();			//读取保存数据
+  adc_config();					//adc初始化
+  TMR0_Config();				//定时器初始化
 // WDT_Config();
-  //
+
   EA =1;								//开启全局中断
   //led_show();				 	//显示测试
   SysStatus = 0;				//显示dly  --3 倒计时
   VarAutoSet = 3;				//
   BitDisplayOn = 1;			//
   BitVoiceMute = 0;			//音量静音标志
-  //
-  //VarVoiceLevel = 14;
-  //save_VoiceLevel();
-  //
+
   while(1)
-    {
-#if 1
+  {
       // WDT_ClearWDT();								  //看门狗喂狗
-      //
       if(SysStatus)												//系统启动后才扫描编码器
-        {
+      {
           encoder_a();										//旋转编码器
           encoder_b();
-        }
+      }
       //
       if(BitTimer1ms)											//1ms--定时时基
-        {
+      {
           BitTimer1ms = 0;
           //
           display();											//显示刷新
@@ -274,30 +258,18 @@ int main(void)
                   //
                   FLASH_UnLock();						//解锁
                   FLASH_Erase(FLASH_DATA,0);//擦除对应所在这一页
-                  //for(i = 0 ;i< 3 ;i++)		//连续256 bytes的写等待Flash执行完成
-                  //{
-                  //	FLASH_Write(FLASH_DATA,0x4, 0xFF); //写地址使用最后的地址(任意地址都可以，建议用使用较少的地址)
-                  //}
                   FLASH_Write(FLASH_DATA,0x0, 0x55);			//写入标志
-                  //Vartemp = FLASH_Read(FLASH_DATA,0x0);
                   FLASH_Write(FLASH_DATA,0x1, 0x2a);
-                  //Vartemp = FLASH_Read(FLASH_DATA,0x1);
-                  //
-                  FLASH_Write(FLASH_DATA,0x2, VarINCnt);	//写入初始数据
-                  //Vartemp = FLASH_Read(FLASH_DATA,0x2);
-                  FLASH_Write(FLASH_DATA,0x3, VarOutCnt);
-                  //Vartemp = FLASH_Read(FLASH_DATA,0x3);
-                  FLASH_Write(FLASH_DATA,0x4, VarVoiceLevel);
-                  //Vartemp = FLASH_Read(FLASH_DATA,0x4);
-                  //
+                  FLASH_Write(FLASH_DATA,0x2, eb_voice_input_channel);	//写入初始数据
+                  FLASH_Write(FLASH_DATA,0x3, eb_voice_output_channel);
+                  FLASH_Write(FLASH_DATA,0x4, eb_voice_level);
                   FLASH_Lock();						//锁
                 }
               break;
             default:
               break;
-            }
         }
-#endif
+      }
     }
 }
 

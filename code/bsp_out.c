@@ -84,19 +84,19 @@ void out_ctrl()
   if(BitDisplayOn  &&  (!BitVoiceMute))		//开启状态下进入
     {
       //输入通道控制
-      if(VarINCnt == 1)
+      if(eb_voice_input_channel == 1)
         {
           IN_1 = 1;
           IN_2 = 0;
         }
-      else if(VarINCnt == 2)
+      else if(eb_voice_input_channel == 2)
         {
           IN_2 = 1;
           IN_1 = 0;
         }
       //输出通道控制
 				//add :  选择那组通道，其他组关闭
-      switch(VarOutCnt)
+      switch(eb_voice_output_channel)
         {
         case 1:
           OUT_1 = 1;

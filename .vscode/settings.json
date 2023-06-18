@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "all.h": "c",
+        "bsp_adc.h": "c",
+        "cms8s6990.h": "c",
+        "adc.h": "c",
+        "bsp_eeprom.h": "c",
+        "bsp_mt.h": "c"
+    }
+}

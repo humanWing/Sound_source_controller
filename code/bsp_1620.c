@@ -410,39 +410,55 @@ void auto_countdown(void)
 *	返 回 值: 无
 *********************************************************************************************************
 */
+
 void display(void)
 {
-  if(!SysStatus)  return ;
+  if(!SysStatus)  
+  {
+    return ;
+  }
+
   //数据存入缓存，进行刷新显示
   if(BitDisplayOn)						//
     {
-
+      #if (DEBUG_AD_SAMPLE_FUNCTION == THIS_FUNCTION_DISABLE)
       //输入通道
-      TM1620_temp[0] = VarINCnt;			//
+      TM1620_temp[0] = eb_voice_input_channel;			//
 
       TM1620_temp[1] = 13;						// -
       //输出通道
-      TM1620_temp[2] = VarOutCnt;			//
+      TM1620_temp[2] = eb_voice_output_channel;			//
       //
       //音频等级
       if(BitVoiceMute)							//禁用音量
-        {
+      {
           TM1620_temp[3] = 13;			//-			显示“-”
           TM1620_temp[4] = 13;			//-
           TM1620_temp[5] = 13;			//-
-        }
+      }
       else
-        {
-          TM1620_temp[3] = VarVoiceLevel/100;			//百位
-          TM1620_temp[4] = VarVoiceLevel%100/10;	//十位
-          TM1620_temp[5] = VarVoiceLevel%10;			//个位
-        }
+      {
+          TM1620_temp[3] = eb_voice_level/100;			//百位
+          TM1620_temp[4] = eb_voice_level%100/10;	//十位
+          TM1620_temp[5] = eb_voice_level%10;			//个位
+      }
       if(BitDisplayData_chang)			//数据有更改时，进行显示刷新
-        {
+      {
           BitDisplayData_chang = 0;
           display_1620();						//刷新数据
           //
-        }
+      }
+    #else
+      extern u16 VarADData_Vlaue;
+      TM1620_temp[3] = VarADData_Vlaue / 1000;
+      TM1620_temp[4] = VarADData_Vlaue % 1000 / 100;
+      TM1620_temp[5] = VarADData_Vlaue % 100 / 10;
+      TM1620_temp[0] = VarADData_Vlaue % 10;
+      TM1620_temp[1] = 13;
+      TM1620_temp[2] = 13;
+
+      display_1620();
+    #endif
     }
   else
     {

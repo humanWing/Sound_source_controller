@@ -28,12 +28,11 @@ sbit 	 IN_A = P2^4;						//定义
 sbit 	 IN_B = P2^5;						//定义
 //音频等级对应的ADC的数据
 //  VDD / 4096 = Vr /Vadc
-//
 code  u16 Voice_Adc_Table[255]=
 {
-  0XFFF,
-  0XFEF,
-  0XFDF,
+  0XFFA,
+  0XFE9,
+  0XFDD,
   0XFD0,
   0XFC0,
   0XFB1,
@@ -287,9 +286,15 @@ code  u16 Voice_Adc_Table[255]=
   0X9E,
   0X8E
 };
-bit BitUpData_chang;
-bit BitData_Astrict_F;		//正转限制
-bit BitData_Astrict_R;		//反转限制
+
+#define MOTOR_ANTICLOCKWISE_TURN  0
+#define MOTOR_CLOCKWISE_TURN      1
+#define MOTOR_STOP_TURN           0xff
+
+u16 VarADData_Vlaue = 0;
+uint8_t BitMTDirection_Forward = MOTOR_STOP_TURN;
+uint8_t gb_motor_power_collation = 0;
+uint8_t eb_button_change_motor_sta = 0;
 /*
 *********************************************************************************************************
 *	函 数 名:
@@ -354,45 +359,6 @@ void MotorStop(void)
   IN_B = 1;
 }
 
-u8 Gu8_sz = sizeof(Voice_Adc_Table) / sizeof(Voice_Adc_Table[0]);
-//二分查找法
-u8 binary_search(u8* addr, u8 Data, u8 sz)
-{
-  u8 left = 0;
-  u8 right = sz - 1;
-  u8 mid = 0;
-
-  while (left < right)
-    {
-      mid = (left + right) / 2;
-      if (addr[mid] > Data)
-        {
-          left = mid + 1;
-        }
-      else if (addr[mid] < Data)
-        {
-          right = mid - 1;
-        }
-      else
-        {
-          if(mid >= (sz - 1))
-            {
-              mid = sz-1;
-            }
-          return mid;
-        }
-    }
-  if(left >= (sz - 1))
-    {
-      left = sz-1;
-    }
-  return left;  //范围是 left 到 left + 1
-}
-
-u16 VarADData_Vlaue = 0;
-bit BitMTDirection_Forward;
-bit BitMTDirection_Rollback;
-bit BitVoicelevel_chang;
 /*
 *********************************************************************************************************
 *	函 数 名:mt_ctrl()
@@ -401,113 +367,91 @@ bit BitVoicelevel_chang;
 *	返 回 值: 无
 *********************************************************************************************************
 */
-
-void mt_ctrl()
+void mt_ctrl(void)
 {
   static u8 VarVoiceLevel_Back = 0;
   //
-  if(BitDisplayOn)						//开启状态下进入此
-    {
-      //限制----到达最大位置，停止
-      if(BitData_Astrict_R || BitData_Astrict_F)
-        {
-          MotorStop();
-          BitMTDirection_Forward = 0;				//正转
-          BitMTDirection_Rollback = 0;			//反转
-        }
+  if (gb_motor_power_collation == 0)
+  {
+      VarADData_Vlaue = GetADValue(0, 8);
+      
+      if (VarADData_Vlaue > Voice_Adc_Table[VOLUME_MAX_CLASS - eb_voice_level] + 50)
+      {
+          BitMTDirection_Forward = MOTOR_ANTICLOCKWISE_TURN;
+      }
+      else if (VarADData_Vlaue < Voice_Adc_Table[VOLUME_MAX_CLASS - eb_voice_level] - 50)
+      {
+          BitMTDirection_Forward = MOTOR_CLOCKWISE_TURN;
+      }
       else
-        {
+      {
+          BitMTDirection_Forward = MOTOR_STOP_TURN;
+      }
 
-          //获取AD数据
-          VarADData_Vlaue = GetADValue(0,8);
-          //判断转的方向
-          if(BitUpData_chang)			//数据有变化
-            {
-              BitUpData_chang = 0;
-              //
-              BitMTDirection_Forward = 0;				//正转清除
-              BitMTDirection_Rollback = 0;			//反转清除
-              MotorStop();
-              //
-              /*	if((VarADData_Vlaue >= Voice_Adc_Table[0]-3 ) || (VarADData_Vlaue <= Voice_Adc_Table[254]) \
-              		|| (VarADData_Vlaue ==  Voice_Adc_Table[VarVoiceLevel]))
-              		{
-              			//停止
-              				BitMTDirection_Forward = 0;				//正转
-              				BitMTDirection_Rollback = 0;			//反转
-              		}
-              		else */
-              if((VarADData_Vlaue >= Voice_Adc_Table[VarVoiceLevel]) && (VarVoiceLevel > VarVoiceLevel_Back ) )
-                {
-                  BitMTDirection_Forward = 1;
-                }
-              else if((VarADData_Vlaue <=Voice_Adc_Table[VarVoiceLevel]) && (VarVoiceLevel < VarVoiceLevel_Back))
-                {
-                  BitMTDirection_Rollback = 1;			//反转
-                }
-              else
-                {
-
-                }
-              //
-              VarVoiceLevel_Back = VarVoiceLevel	;				//保存上一次得等级值，防止出现等级增加，采集到AD值导致反转。
-              //
-            }
-          //
-          if(BitMTDirection_Forward)
-            {
-              MotorForward();//电机正转
-              //
-              //if((VarADData_Vlaue >= Voice_Adc_Table[VarVoiceLevel] - 3) || (VarADData_Vlaue <= Voice_Adc_Table[VarVoiceLevel])-3)
-              if(VarADData_Vlaue <= (Voice_Adc_Table[VarVoiceLevel]-3))
-                {
-                  MotorStop();
-                  BitMTDirection_Forward =0;
-                }
-              //
-              if(VarVoiceLevel >=254)
-                {
-                  BitData_Astrict_F = 1;			//限制
-                }
-              else
-                {
-                  BitData_Astrict_F = 0;
-                }
-            }
-          else if(BitMTDirection_Rollback)
-            {
-              MotorReverse();//电机反转
-              //
-              if(VarADData_Vlaue >= (Voice_Adc_Table[VarVoiceLevel] - 3) )
-                {
-                  MotorStop();
-                  BitMTDirection_Rollback =0;
-                }
-              //
-              //
-              if(VarVoiceLevel <=0)
-                {
-                  BitData_Astrict_R = 1;			//限制
-                }
-              else
-                {
-                  BitData_Astrict_R = 0;
-                }
-            }
-          else
-            {
-              MotorStop();
-              BitMTDirection_Forward = 0;				//正转
-              BitMTDirection_Rollback = 0;			//反转
-            }
-        }
-    }
+      gb_motor_power_collation = 1;
+      VarVoiceLevel_Back = eb_voice_level;
+  }
   else
-    {
-      BitData_Astrict_F = 0;
-      BitData_Astrict_R = 0;
-    }
+  {
+      if(eb_button_change_motor_sta)			//数据有变化
+      {
+          eb_button_change_motor_sta = 0;
+          
+          MotorStop();
+          VarADData_Vlaue = GetADValue(0, 8);
 
+          if (eb_voice_level > VarVoiceLevel_Back )
+          {
+              BitMTDirection_Forward = MOTOR_CLOCKWISE_TURN;
+          }
+          else if (eb_voice_level < VarVoiceLevel_Back)
+          {
+              BitMTDirection_Forward = MOTOR_ANTICLOCKWISE_TURN;
+          }
+          else
+          {
+              BitMTDirection_Forward = MOTOR_STOP_TURN;
+          }
+
+          VarVoiceLevel_Back = eb_voice_level;				//保存上一次得等级值，防止出现等级增加，采集到AD值导致反转。
+      }
+  }
+#if (DEBUG_AD_SAMPLE_FUNCTION == THIS_FUNCTION_DISABLE)
+  if(BitMTDirection_Forward == MOTOR_CLOCKWISE_TURN)
+  {
+      MotorStop();
+      VarADData_Vlaue = GetADValue(0, 8);
+
+      if(VarADData_Vlaue < (Voice_Adc_Table[VOLUME_MAX_CLASS - VarVoiceLevel_Back] - 10))
+      {
+          MotorForward();
+      }
+      else
+      {
+          BitMTDirection_Forward = MOTOR_STOP_TURN;
+      }
+  }
+  else if(BitMTDirection_Forward == MOTOR_ANTICLOCKWISE_TURN)
+  {
+      MotorStop();
+      VarADData_Vlaue = GetADValue(0, 8);
+      
+      if(VarADData_Vlaue > (Voice_Adc_Table[VOLUME_MAX_CLASS - VarVoiceLevel_Back] + 10) )
+      {
+          MotorReverse();
+      }
+      else
+      {
+          BitMTDirection_Forward = MOTOR_STOP_TURN;
+      }
+  }
+  else
+  {
+    
+  }
+#else
+    VarADData_Vlaue = GetADValue(0, 8);
+#endif
 }
 
 

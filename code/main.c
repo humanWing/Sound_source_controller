@@ -157,6 +157,54 @@ void TMR0_Config(void)
   */
   TMR_Start(TMR0);
 }
+
+void TMR1_Config(void)
+{
+
+  /*
+  (1)设置Timer的运行模式
+  */
+  TMR_ConfigRunMode(TMR1, TMR_MODE_TIMING,TMR_TIM_AUTO_8BIT);
+  /*
+  (2)设置Timer 运行时钟
+  */
+  //	/*Fsys = 12Mhz，Ftimer = 1Mhz,Ttmr= 1us*/
+  TMR_ConfigTimerClk(TMR1, TMR_CLK_DIV_12);						/*Fsys = 24Mhz，Ftimer = 2Mhz,Ttmr=0.5us*/
+  /*
+  (3)设置Timer周期
+  */
+  TMR_ConfigTimerPeriod(TMR1, 256-200, 256-200); 				// 200*0.5us = 100us,递增计数
+  //TMR_ConfigTimerPeriod(TMR0, 256-100, 256-100); 					//100*1us = 100us
+  /*
+  (4)开启中断
+  */
+  TMR_EnableOverflowInt(TMR1);
+
+  /*
+  (5)设置Timer中断优先级
+  */
+  IRQ_SET_PRIORITY(IRQ_TMR1, IRQ_PRIORITY_HIGH);
+  //IRQ_ALL_ENABLE();
+
+  /*
+  (6)开启Timer
+  */
+  // TMR_Start(TMR0);
+}
+
+// void time1_start(void)
+// {
+//   TMR_Start(TMR1);
+//   P0EXTIE |= 0x01;
+// }
+
+// void time1_stop(void)
+// {
+//   TMR_Stop(TMR1);
+// }
+
+// P0EXTIE |= 0x01;
+// P0EXTIE &= 0xfe;
 /******************************************************************************
  ** \brief	 WDT_Config
  ** \param [in]
@@ -194,9 +242,11 @@ void WDT_Config(void)
  **
  ** \return 0
  *****************************************************************************/
+extern uint16_t bsp_ir_data_raw(void);
 
 int main(void)
 {
+  EA = 0;
   encoder_init();				//编码器初始化
   init_TM1620();				//显示
   IR_Init();						//IR初始化
@@ -205,9 +255,14 @@ int main(void)
   First_ReadData();			//读取保存数据
   adc_config();					//adc初始化
   TMR0_Config();				//定时器初始化
+  TMR1_Config();
 // WDT_Config();
 
-  EA =1;								//开启全局中断
+  TMR_Start(TMR1);
+  // P0EXTIE |= 0x01;
+  EXTINT_EnableInt(EXTINT0);
+
+  EA = 1;								//开启全局中断
   //led_show();				 	//显示测试
   SysStatus = 0;				//显示dly  --3 倒计时
   VarAutoSet = 3;				//
@@ -222,37 +277,32 @@ int main(void)
           encoder_a();										//旋转编码器
           encoder_b();
       }
-      //
+
       if(BitTimer1ms)											//1ms--定时时基
       {
           BitTimer1ms = 0;
-          //
           display();											//显示刷新
-          //
+
           switch(SysStatus)	 							//系统状态
             {
             case 0:
               auto_countdown();						//倒计时
               break;
+
             case 1:
               if(++VarTimer10ms >= 10)		//10ms
-                {
+              {
                   BitTimer10ms = 1;
                   VarTimer10ms = 0;
+
                   Scan_encodeer_a();			//独立按键
                   Scan_encodeer_b();
-                  //
                   out_ctrl();							//输入输出控制
                   Mute_ctrl();						//静音控制--默认关闭
-                  //
                   mt_ctrl();							//马达控制
-                  //
-                  VoiceLevelBack_Ctrl();	//控制返回初始值
-                  //
-                  IRReceiveCTRL();				//红外接收处理
-                }
-              if((++VarWirtFlashCnt >= 500 ) && BitDataCharg)		//10ms*1000  且数据有变化才进行更新
-                {
+              }
+              if ((++VarWirtFlashCnt >= 500 ) && BitDataCharg)		//10ms*1000  且数据有变化才进行更新
+              {
                   VarWirtFlashCnt = 0;
                   BitDataCharg = 0;
                   //
@@ -264,8 +314,9 @@ int main(void)
                   FLASH_Write(FLASH_DATA,0x3, eb_voice_output_channel);
                   FLASH_Write(FLASH_DATA,0x4, eb_voice_level);
                   FLASH_Lock();						//锁
-                }
+              }
               break;
+
             default:
               break;
         }

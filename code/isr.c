@@ -70,9 +70,10 @@ u8 xdata 	BitTime100us;
  **
  ** \return none
  ******************************************************************************/
+extern void bsp_ir_rec_handle(void);
 void INT0_IRQHandler(void)  interrupt INT0_VECTOR
 {
-
+  bsp_ir_rec_handle();
 }
 /******************************************************************************
  ** \brief	 Timer 0 interrupt service function
@@ -83,8 +84,7 @@ void INT0_IRQHandler(void)  interrupt INT0_VECTOR
 ******************************************************************************/
 void Timer0_IRQHandler(void)  interrupt TMR0_VECTOR
 {
-  //P24 = ~P24;
-  IR_RX();
+
   BitTime100us = 1;
   if(++VarTimer1ms >= 10)		//时间基值 100us
     {
@@ -112,7 +112,7 @@ void INT1_IRQHandler(void)  interrupt INT1_VECTOR
 ******************************************************************************/
 void Timer1_IRQHandler(void)  interrupt TMR1_VECTOR
 {
-
+    IR_RX();
 }
 /******************************************************************************
  ** \brief	 UART 0 interrupt service function

@@ -25,10 +25,10 @@ void adc_config()
   ADC_EnableChannel(ADC_CH_0);
   GPIO_SET_MUX_MODE(P00CFG, GPIO_P00_MUX_AN0);
   //设置ADC参考电压  VDD
-  // ADC_EnableLDO();
-  // ADC_ConfigADCVref(ADC_VREF_3V);		//ADC_VREF_1P2V, ADC_VREF_2V, ADC_VREF_2P4V, ADC_VREF_3V
+  ADC_EnableLDO();
+  ADC_ConfigADCVref(ADC_VREF_3V);		//ADC_VREF_1P2V, ADC_VREF_2V, ADC_VREF_2P4V, ADC_VREF_3V
   //LDO禁止，参考电压为芯片电源电压。
-  ADC_DisableLDO();
+  // ADC_DisableLDO();
   //设置ADC中断
   //ADC_EnableInt();
   //IRQ_SET_PRIORITY(IRQ_ADC,IRQ_PRIORITY_HIGH);

@@ -369,6 +369,7 @@ void MotorStop(void)
 */
 void mt_ctrl(void)
 {
+    #if 1
   static u8 VarVoiceLevel_Back = 0;
   //
   if (gb_motor_power_collation == 0)
@@ -452,6 +453,24 @@ void mt_ctrl(void)
 #else
     VarADData_Vlaue = GetADValue(0, 8);
 #endif
+    #else
+    static uint16_t test12=100;
+    --test12;
+
+    if (test12 < 100)
+    {
+        MotorReverse();
+    }
+    if (test12 < 50)
+    {
+        if (test12 == 0)
+        {
+            test12 = 100;
+        }
+        MotorForward();
+    }
+    VarADData_Vlaue = GetADValue(0, 8);
+    #endif
 }
 
 

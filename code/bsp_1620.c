@@ -421,7 +421,31 @@ void display(void)
   //数据存入缓存，进行刷新显示
   if(BitDisplayOn)						//
     {
-      #if (DEBUG_AD_SAMPLE_FUNCTION == THIS_FUNCTION_DISABLE)
+      #if (DEBUG_AD_SAMPLE_FUNCTION == THIS_FUNCTION_ENABLE)
+      extern u16 VarADData_Vlaue;
+      TM1620_temp[3] = VarADData_Vlaue / 1000;
+      TM1620_temp[4] = VarADData_Vlaue % 1000 / 100;
+      TM1620_temp[5] = VarADData_Vlaue % 100 / 10;
+      TM1620_temp[0] = VarADData_Vlaue % 10;
+      TM1620_temp[1] = 13;
+      TM1620_temp[2] = 13;
+
+      display_1620();
+      
+    #elif (DEBUG_IR_FUNCTION == THIS_FUNCTION_ENABLE)
+      extern uint16_t bsp_ir_data_raw(void);
+      uint16_t temp = bsp_ir_data_raw();
+
+      TM1620_temp[3] = temp / 10000;
+      TM1620_temp[4] = temp % 10000 / 1000;
+      TM1620_temp[5] = temp % 1000 / 100;
+      TM1620_temp[0] = temp % 100 / 10;
+      TM1620_temp[1] = temp % 10;
+      TM1620_temp[2] = 13;
+
+      display_1620();
+
+    #else
       //输入通道
       TM1620_temp[0] = eb_voice_input_channel;			//
 
@@ -448,16 +472,6 @@ void display(void)
           display_1620();						//刷新数据
           //
       }
-    #else
-      extern u16 VarADData_Vlaue;
-      TM1620_temp[3] = VarADData_Vlaue / 1000;
-      TM1620_temp[4] = VarADData_Vlaue % 1000 / 100;
-      TM1620_temp[5] = VarADData_Vlaue % 100 / 10;
-      TM1620_temp[0] = VarADData_Vlaue % 10;
-      TM1620_temp[1] = 13;
-      TM1620_temp[2] = 13;
-
-      display_1620();
     #endif
     }
   else

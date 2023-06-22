@@ -1,598 +1,225 @@
+/*
+ * @Author: Lkw 1332861164@qq.com
+ * @Date: 2023-06-09 23:35:03
+ * @LastEditors: Lkw 1332861164@qq.com
+ * @LastEditTime: 2023-06-18 22:50:46
+ * @FilePath: \CMS8S6990_6_10\code\bsp_ir.c
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 /*********************************************************************************************************
-*
-*   模块名称 : IR驱动模块
-*   说    明 : 100US 定时器中调用。
-*********************************************************************************************************/
+ *
+ *   模块名称 : IR驱动模块
+ *   说    明 : 100US 定时器中调用。
+ *********************************************************************************************************/
 #include "all.h"
 
-//定义的变量
-u8  VarIRRxData[ConIRRxDataCout];       			//接收数据BUF
+uint16_t gb_ir_judge_time = 0;
+uint8_t irdata_num      = 0;
+uint8_t self_lock_flag  = 0;                  //红外接收标志位 
+uint8_t ir_rec_busy     = 0;
+uint16_t ir_data_rec_table[10] = {0}; //脉冲时长数组
 
-bit BitIRRXPress;
-bit BitIRRX_9MS;                       //9MS低电平接收完成标志
-bit BitIRRX_4D5MS;                     //4.5MS高电平接收完成标志
+// sbit IR_input = P0^4;
+// sbit test_input = P1^7;
+uint16_t bsp_ir_data_raw(void);
 
-bit BitIRRX_DUP;                       //重复码标志.
-
-bit BitIRRX_FREE;                      //IR接收进行标志  1:正在接收中
-
-bit BitIRRX_FINISH;                    //接收完成标志
-
-bit BitIRRX_LEVEL;
-
-u8 VarIRRX_DATA;
-
-u8 VarIRRX_CNT;                        //;IR接收数据计数,总共4字节,32bit.
-
-u8 VarIRRX_TIME;                       //;IR接收时间计数.
-
-u8  VarIRRxBitCnt;
-//
-u8 Var_IR_RX_PRESS_TIME;
-u8 Var_IR_RX_RELEASE_TIME;
-bit Bit_IR_RX_LONG_PRESS;
-bit BitIRRXPress;
-u8 vattestcnt;
-xdata u8 BitVoiceLevelBack;
-//
+/********************* extern port *********************/ 
 void IR_Init()
 {
   GPIO_SET_MUX_MODE(P04CFG, GPIO_MUX_GPIO);
   GPIO_ENABLE_INPUT(P0TRIS, GPIO_PIN_4);
+  // P04CFG = 0x00;
+  // P0TRIS &= 0xEF;
+  // P04EICFG = 0x02;
+  // P0EXTIE = 0x00;
+    PS_INT0 = 0x04;
+  // P0EXTIE |= 0x10;
+    EXTINT_ConfigInt(EXTINT0, EXTINT_TRIG_FALLING);
+    EXTINT_EnableInt(EXTINT0);
+  // P0EXTIE |= 0x10;
+  // GPIO_ENABLE_OUTPUT(P0TRIS, GPIO_PIN_4);
+  // GPIO_ENABLE_OD(P0TRIS, GPIO_PIN_4);
 }
 
 void IR_RX(void)
 {
-  //
-  if (!BitIRRX_FREE)                                  //是否是释放状态
+    if (gb_ir_judge_time < 1800)
     {
-      if (!P_IR_RX)                                   //低电平启动
-        {
-          //
-          VarIRRX_DATA = 0;                           //保存的数据
-          //
-          BitIRRX_LEVEL = 0;
-          //
-          VarIRRX_TIME = 0;                           //计数时间
-          BitIRRX_9MS = 0;
-          BitIRRX_4D5MS = 0;
-          BitIRRX_DUP = 0;
-          BitIRRX_FINISH = 0;
-          VarIRRX_CNT  = 0;                           //32bit -4个字节
-          VarIRRxBitCnt = 0;
-          //
-          BitIRRX_FREE  = 1;                          //置1--;接收到低电平,启动接收
+        gb_ir_judge_time++;
+    }
+    else if (self_lock_flag == 0)
+    {
+        self_lock_flag = 1;
+        irdata_num = 0;
+    }
+}
 
+void bsp_ir_rec_handle(void)
+{
+    if (self_lock_flag == 1)
+    {
+      if (gb_ir_judge_time < 1800)
+      {
+          ir_rec_busy = 1;
+          ir_data_rec_table[irdata_num] = gb_ir_judge_time;
+          irdata_num++;
+
+          if(irdata_num == 10)
+          {
+            ir_rec_busy = 0;
+            irdata_num=0;
+            self_lock_flag = 0;
+            bsp_ir_event_pro(bsp_ir_data_raw());
+          }
+      }
+    }
+    gb_ir_judge_time=0;
+}
+
+uint16_t bsp_ir_data_raw(void)
+{
+    uint8_t  loop;
+    uint16_t ir_data = 0;
+
+    if (ir_rec_busy == 1)
+    {
+        return 0;
+    }
+
+    for(loop=1; loop<9; loop++)
+    {
+        if (ir_data_rec_table[loop] <= 13)
+        {
+            ir_data<<=2;
+            ir_data+=0x00;                    
+        }
+        else if (ir_data_rec_table[loop] <= 16)
+        {
+            ir_data<<=2;
+            ir_data+=0x01;                    
+        }
+        else if (ir_data_rec_table[loop] <= 19)
+        {
+            ir_data<<=2;
+            ir_data+=0x02;                    
+        }
+        else
+        {
+            ir_data<<=2;
+            ir_data+=0x03;                    
         }
     }
-  else
-    {
-      if(BitIRRX_DUP)										//重复码标志位
-      {
-          //
-          if (P_IR_RX == 0)																		//电平一直为低
-          {
-              if (++VarIRRX_TIME >= ConIRRXLOW_OVER)						//且大于OVER时间，释放
-              {
-                  BitIRRX_FREE = 0;
-                  return ;                                    //退出
-              }
-          }
-      }
-      else if (BitIRRX_4D5MS)                                 //数据
-      {
-          if (BitIRRX_FINISH)                                 //接收成功后,如果接收到电平.强制释放接收状态.
-          {
-              if (!P_IR_RX)
-              {
-                  if (VarIRRX_TIME >= ConIRRXLOW_OVER) 				//强制释放接收状态.
-                  {
-                      BitIRRX_FREE = 0;
-                      return ;                            		//退出
-                  }
-              }
-              else
-              {
-                  BitIRRX_FREE = 0;
-                  return ;                           				 //退出
-              }
-          }
-          else                                               //32个bit数据 接收处理
-          {
-              if (P_IR_RX)
-              {
-                  if (!BitIRRX_LEVEL)                       //电平状态标志位
-                  {
-                      BitIRRX_LEVEL = 1;                    //低电平变高电平的时候,清除时间计数,重新开始计高电平时间
-                      VarIRRX_TIME = 0;
-                  }
-
-                  VarIRRX_TIME ++;
-
-                  if (VarIRRX_TIME >= ConIRRXHIGH_OVER)       //如果高电平时间超过,   说明接收数据错误,强制释放接收状态.
-                  {
-                      BitIRRX_FREE = 0;                       //释放
-                      //
-                      return ;                                //退出
-                  }
-              }
-              else                                            //状态转成L电平时，再判断数据是 1还是0
-              {
-                  if (BitIRRX_LEVEL)                          //
-                    {
-                      BitIRRX_LEVEL = 0;
-                      //
-                      //判断数据
-                      VarIRRX_DATA = VarIRRX_DATA >> 1;       //从低位开始接收，右移一位
-
-                      if (VarIRRX_TIME  > ConIR_RX_01)        //时间>1ms,说明接收到高电平,
-                        {
-                          VarIRRX_DATA  |= 0x80;
-                        }
-
-                      //
-                      VarIRRxBitCnt++;                                        //
-
-                      if (VarIRRxBitCnt >= 8)
-                      {
-                          VarIRRxBitCnt = 0;
-                          //
-                          VarIRRxData[VarIRRX_CNT] = VarIRRX_DATA;
-
-                          if (++VarIRRX_CNT >= 4)         //32个字节接收完毕
-                          {
-                              VarIRRX_CNT = 0;
-
-                              if ((VarIRRxData[0] == 0xB2) && (VarIRRxData[1] == 0x4D))   //判断数据
-                              {
-                                  BitIRRX_FINISH = 1;                         //接收完成
-                              }
-
-                              return ;                                                    //退出循环
-
-                          }
-                      }
-
-                      VarIRRX_TIME    =   0;
-                  }
-
-                  //
-                  VarIRRX_TIME ++;
-
-                  if (VarIRRX_TIME >= ConIRRXLOW_OVER)    //低电平时间计数+1
-                  {
-                      BitIRRX_FREE = 0;                   //>0.5ms--强制释放
-                      return ;                            //退出
-                  }
-              }
-
-
-          }
-      }
-      else if (BitIRRX_9MS)
-        {
-          //4.5MS
-          if (P_IR_RX)                                 //高电平进入
-            {
-              VarIRRX_TIME ++;                         //接收到高电平,低电平计数时间+1
-              //
-              if (VarIRRX_TIME >= ConIRRxOVER_4D5ms)  //强制释放接收状态.
-                {
-                  BitIRRX_FREE = 0;                               //
-                  return ;                            //退出
-                }
-          }
-          else                                                                    //
-          {
-              if (VarIRRX_TIME < ConIR_RX_DUP)        //接收时间小于2.6ms,说明接收数据是重复码
-              {
-                  BitIRRX_DUP = 1;                    //如果接收到高电平时强制释放,9ms和4.5ms接收正常,并且没有接收到数据,认为接收到重复码.
-                  VarIRRX_TIME = 0;
-              }
-              else if (VarIRRX_TIME > ConIRRx_4D5ms)
-              {
-
-                  BitIRRX_4D5MS  = 1;                 //接收时间>4.5ms,说明4.5MS时间接收正确.
-                  VarIRRX_TIME = 0;
-
-              }
-              else
-              {
-                  BitIRRX_FREE = 0;                               //强制释放
-                  return ;                            //退出
-              }
-          }
-      }
-      else
-      {
-          //;接收9ms低电平.
-          if (!P_IR_RX)                                                   //低电平进入
-          {
-              VarIRRX_TIME ++;                                        //接收到低电平,低电平计数时间+1
-              //
-              if (VarIRRX_TIME >= ConIRRxOVER_9ms) //强制释放接收状态.
-              {
-                  BitIRRX_FREE = 0;                               //
-                  return ;                            //退出
-              }
-          }
-          else                                                                  //电平状态为高--此时判断VarIRRX_TIME
-          {
-              if (VarIRRX_TIME >   ConIRRx_9ms)       //接收时间>8.5ms,说明9MS时间接收正确.
-              {
-                  VarIRRX_TIME = 0;
-                  BitIRRX_9MS = 1;
-              }
-              else                                                            //接收时间小于8.5ms,说明接收数据错误,强制释放接收状态
-              {
-                  BitIRRX_FREE = 0;
-                  return ;                            //退出
-              }
-          }
-      }
-  }
+    return ir_data;
 }
+#if (DEBUG_IR_FUNCTION == THIS_FUNCTION_ENABLE)
 
-/*============================================================================
-*红外接收处理
-由红外接收程序传递的标志 F_IR_RX_FINISH, F_IR_RX_DUP 判断按键状态.
-;由红外接收程序传递的数据 R_IR_RX_DATA1( 用户码 )   R_IR_RX_DATA3( 数据 )判断按键位号.
-============================================================================*/
+#else
 
-void IRReceiveCTRL(void)
+///////////xiaomi TV ir remote control explain
+/* 
+xiaomi            customer
+power:  15564     (mute)
+up:     34309     (input channel switch)
+down:   34310     (input channel switch)
+left:   34315     (input channel switch)
+right:  34316     (input channel switch)
+enter:  34317     (mute)
+home:   34312     (output channel switch)
+back:   34311     (input channel switch)
+menu:   34308     (output channel switch)
+plus:   34318     (volume plus)
+minus:  34319     (volume minus)
+
+ */
+
+#define IR_KEY_POWER  15564
+#define IR_KEY_UP     34309
+#define IR_KEY_DOWN   34310
+#define IR_KEY_LEFT   34315
+#define IR_KEY_RIGHT  34316
+#define IR_KEY_ENTER  34317
+#define IR_KEY_HOME   34312
+#define IR_KEY_BACK   34311
+#define IR_KEY_MENU   34308
+#define IR_KEY_PLUS   34318
+#define IR_KEY_MINUS  34319
+
+void bsp_ir_event_pro(uint16_t ir_key_num)
 {
-  u8  tmp1;
-  u8  IR_RX_VALUE;
-  //
-  if(++Var_IR_RX_PRESS_TIME >= 255)		//长按计数时间+1
-    Var_IR_RX_PRESS_TIME --;
+    switch (ir_key_num)
+    {
+    // mute
+    case IR_KEY_POWER:
+    case IR_KEY_ENTER:
+        BitDisplayData_chang = 1;
+        //控制禁用音频
+        BitVoiceMute = ~BitVoiceMute;
+      break;
 
-  ////检测红外按下.进入第一次红外接收处理.  红外只是第一次才有数据.
-  if (BitIRRX_FINISH)								 
-  {
-      BitIRRX_FINISH = 0;
-      //
-      //验证数据是否时正确
-      tmp1 = VarIRRxData[3] ^ 0xFF;
-
-      if (VarIRRxData[2] == tmp1)
+    // input channel switch
+    case IR_KEY_UP   :
+    case IR_KEY_DOWN :
+    case IR_KEY_LEFT :
+    case IR_KEY_RIGHT:
+    case IR_KEY_BACK :
+        BitDisplayData_chang = 1;		//显示更新标志
+        //
+        BitDataCharg = 1;						//数据保存更新标志
+        if(eb_voice_input_channel >= 2)
         {
-          Var_IR_RX_RELEASE_TIME = 0;		//接收释放时间清0.
-          Var_IR_RX_PRESS_TIME = 0;			//按键计数时间清0.
-          //
-          BitIRRXPress = 1;							//置红外按下标志
-          IR_RX_VALUE =VarIRRxData[2] ;//用另一个变量保存数据
-          //
-          BitDisplayData_chang = 1;
-          //
-          switch (IR_RX_VALUE)				//判断数据
-            {
-            case 0xDC:								//IR开关机
-              BitDisplayOn = ~BitDisplayOn;
+            eb_voice_input_channel = 1;
+        }
+        else
+        {
+            eb_voice_input_channel ++;
+        }
+      break;
 
-              //
-              if(BitDisplayOn)
-                {
-                  SysStatus = 0;					//IR开机后-- 切换到倒计时
-                  VarAutoSet = 3;
-                  VarAutoTimeCnt = 0;
-                  VarDisplayUpdateCnt = 0;
-                }
-              else
-                {
-                  BitDisplayData_chang = 1;
+    // output channel switch
+    case IR_KEY_HOME:
+        eb_voice_output_channel = eb_voice_output_channel > 1 ? (eb_voice_output_channel-1) : 4;
+        BitDisplayData_chang = 1;
+        BitDataCharg = 1;
+      break;
 
-                }//
-              break;
-            case 0x82:								//静音
-              if(BitDisplayOn)				//开启状态下才能进行此操作
-                {
-                  BitVoiceMute = ~BitVoiceMute;
-                  BitDisplayData_chang = 1;
-                }
-              break;
-            case 0xCA:								//音量等级加
-              if(BitDisplayOn)				//开启状态下才能进行此操作
-                {
-                  eb_button_change_motor_sta = 1;
-                  //BitData_Astrict_R = 0;
-                  //
-                  if(eb_voice_level>= VOLUME_MAX_CLASS)
-                    {
-                      eb_voice_level = VOLUME_MAX_CLASS;
-                    }
-                  else
-                    {
-                      eb_voice_level++;
-                    }
-                  BitDataCharg = 1;
-                }
-              break;
-            case 0x80:
-              if(BitDisplayOn)				//开启状态下才能进行此操作
-              {
-                  eb_button_change_motor_sta = 1;
-                  //BitData_Astrict_R = 0;
-                  //
-                  if(eb_voice_level>= VOLUME_MAX_CLASS)
-                    eb_voice_level = VOLUME_MAX_CLASS;
-                  else
-                    eb_voice_level++;
-                  //
-                  BitDataCharg = 1;
+    case IR_KEY_MENU:
+        eb_voice_output_channel = eb_voice_output_channel < 4 ? (eb_voice_output_channel+1) : 1;
+        BitDisplayData_chang = 1;
+        BitDataCharg = 1;
+      break;
 
-              }
-              break;
+    // volume plus
+    case IR_KEY_PLUS:
+      if (BitVoiceMute == 0)
+      {
+        if(eb_voice_level < VOLUME_MAX_CLASS)
+        {
+            eb_voice_level++;
+        }
+    
+        BitDisplayData_chang = 1;
+        eb_button_change_motor_sta = 1;
+        BitDataCharg = 1;
+      }
+      break;
 
-            case 0xD2:								//音量等级减
-              if(BitDisplayOn)				//开启状态下才能进行此操作
-              {
-                  eb_button_change_motor_sta = 1;
-                  // BitData_Astrict_F = 0;
-                  if(eb_voice_level== 0)
-                  {
-                      eb_voice_level = 0;
-                  }
-                  else
-                  {
-                      eb_voice_level--;
-                  }
-                  BitDataCharg = 1;
-
-              }
-              break;
-            case 0x81:
-              if(BitDisplayOn)				//开启状态下才能进行此操作
-              {
-                  eb_button_change_motor_sta = 1;
-                  // BitData_Astrict_F = 0;
-                  if(eb_voice_level== 0)
-                  {
-                      eb_voice_level = 0;
-                  }
-                  else
-                  {
-                      eb_voice_level--;
-                  }
-                  BitDataCharg = 1;
-              }
-              break;
-            case 0x99:								//输入
-              if(BitDisplayOn)				//开启状态下才能进行此操作
-              {
-                  if(eb_voice_input_channel == 1)
-                  {
-                      eb_voice_input_channel = 2;
-                  }
-                  else
-                  {
-                      eb_voice_input_channel --;
-                  }
-                  BitDataCharg = 1;
-              }
-              break;
-
-            case 0xC1:						//输出通道等级
-              if(BitDisplayOn)				//开启状态下才能进行此操作
-              {
-                  if(eb_voice_input_channel == 2)
-                  {
-                      eb_voice_input_channel = 1;
-                  }
-                  else
-                  {
-                      eb_voice_input_channel ++;
-                  }
-                  BitDataCharg = 1;
-              }
-              break;
-
-            case 0xce:
-              if(BitDisplayOn)				//开启状态下才能进行此操作
-                {
-                  if(eb_voice_output_channel>=4)
-                    {
-                      eb_voice_output_channel = 1;
-                    }
-                  else
-                    {
-                      eb_voice_output_channel ++;
-                    }
-                  BitDataCharg = 1;
-                }
-              break;
-
-            case 0xC5:								//切换回到初始音量等级
-              if(BitDisplayOn)				//开启状态下才能进行此操作
-                {
-                  BitVoiceLevelBack = 1;	//回退标志位
-                }
-              break;
-
-            default:
-              break;
-            }
-
+    // volume minus
+    case IR_KEY_MINUS:
+      if (BitVoiceMute == 0)
+      {
+        if(eb_voice_level > VOLUME_MIN_CLASS)
+        {
+            eb_voice_level--;
         }
 
+        BitDisplayData_chang = 1;			//数据有更改标志位置1
+        eb_button_change_motor_sta = 1;
+        BitDataCharg = 1;
+      }
+      break;
+    
+    default:
+      break;
     }
-  else
-  {
-      //检测到重复码,进行重复码处理,主要处理长按动作.
-      if(BitIRRX_DUP)
-      {
-          BitIRRX_DUP = 0;
-          //检测到重复码之前必须先检测到红外码,否则强制释放.
-          if(BitIRRXPress)
-          {
-              Var_IR_RX_RELEASE_TIME = 0;			//接收释放时间清0
-              //
-              if(Var_IR_RX_PRESS_TIME >= 120 )//时间基值 10ms
-              {
-                  Var_IR_RX_PRESS_TIME --;
-                  //
-                  Bit_IR_RX_LONG_PRESS	 = 1;		//长按动作标志置1
-                  //
-//dup:
-                  BitDisplayData_chang = 1;
-                  switch(VarIRRxData[2])				//此处添加长按动作.
-                  {
-                    case 0xCA:								//音量等级加
-                      if(BitDisplayOn)				//开启状态下才能进行此操作
-                        {
-                          eb_button_change_motor_sta = 1;
-                          //BitData_Astrict_R = 0;
-                          //
-                          if(eb_voice_level>= VOLUME_MAX_CLASS)
-                            eb_voice_level = VOLUME_MAX_CLASS;
-                          else
-                            eb_voice_level++;
-
-                          //save_VoiceLevel();
-
-                        }
-                      break;
-                    case 0x80:
-                      if(BitDisplayOn)				//开启状态下才能进行此操作
-                      {
-                          eb_button_change_motor_sta = 1;
-                          //BitData_Astrict_R = 0;
-                          //
-                          if(eb_voice_level>= VOLUME_MAX_CLASS
-)
-                            eb_voice_level = VOLUME_MAX_CLASS
-;
-                          else
-                            eb_voice_level++;
-
-                          //save_VoiceLevel();
-                      }
-                      break;
-
-                    case 0xD2:								//音量等级减
-                      if(BitDisplayOn)				//开启状态下才能进行此操作
-                      {
-                          eb_button_change_motor_sta = 1;
-                          // BitData_Astrict_F = 0;
-                          if(eb_voice_level== 0)
-                          {
-                              eb_voice_level = 0;
-                          }
-                          else
-                          {
-                              eb_voice_level--;
-                          }
-                          //save_VoiceLevel();
-
-                        }
-                      break;
-                    case 0x81:
-                      if(BitDisplayOn)				//开启状态下才能进行此操作
-                      {
-                          eb_button_change_motor_sta = 1;
-                          // BitData_Astrict_F = 0;
-                          if(eb_voice_level== 0)
-                          {
-                              eb_voice_level = 0;
-                          }
-                          else
-                          {
-                              eb_voice_level--;
-                          }
-                          //	save_VoiceLevel();
-                      }
-                      break;
-
-                    default:
-                      break;
-                  }
-
-                  //
-              }
-          }
-      }
-      else
-      {
-          if(BitIRRXPress)	//如果无按键按下,说明此时出于空闲状态.判断按键释放.
-            {
-              if(++Var_IR_RX_RELEASE_TIME >= 21 )			//红外释放时间  时间基准10ms
-              {
-                  Var_IR_RX_RELEASE_TIME --;
-
-                  //
-                  BitIRRXPress = 0;											//释放时间到,清除标志位.
-
-              }
-              else
-              {
-                  // goto dup;
-              }
-              /*	else																		//由于红外100ms接收一次信号,所以长按确认后,在没有信号的时候也需要进入长按处理.
-              	{
-              				if(Bit_IR_RX_LONG_PRESS)					//有长按动作,直接
-              				{
-              						switch(VarIRRxData[2])				//此处添加长按动作.
-              						{
-              							case 0x45:vattestcnt =4;break;
-
-              								default:
-              							break;
-              						}
-              				}
-              	}*/
-          }
-          else
-          {
-              BitIRRXPress = 0;
-              Bit_IR_RX_LONG_PRESS = 0;
-              Var_IR_RX_RELEASE_TIME = 0;
-              Var_IR_RX_PRESS_TIME = 0;
-
-          }
-      }
-  }
 }
-
-/*
-*********************************************************************************************************
-*	函 数 名:VoiceLevelBack_Ctrl
-*	功能说明: IR  控制回退音量等级
-*	形    参: 无
-*	返 回 值: 无
-*********************************************************************************************************
-*/
-u8 VarBackTimeCnt;
-//
-void VoiceLevelBack_Ctrl(void)
-{
-  if(BitVoiceLevelBack == 1)
-  {
-      if(VarBackTimeCnt >= 1)
-      {
-          VarBackTimeCnt =0;
-          //
-          BitDisplayData_chang = 1;
-          eb_button_change_motor_sta = 1;
-          //
-          if(eb_voice_level ==1)
-            {
-              eb_voice_level = 1;
-              BitVoiceLevelBack = 0;
-            }
-          else
-            {
-              eb_voice_level--;
-            }
-          //
-      }
-      else
-      {
-          VarBackTimeCnt ++;
-      }
-  }
-  else
-  {
-      VarBackTimeCnt = 0;
-  }
-
-}
+#endif

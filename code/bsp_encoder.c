@@ -175,7 +175,6 @@ u8 EncoderReading_B(void)
   return 0;
 }
 
-
 //////////////////
 void encoder_a(void)
 {
@@ -335,123 +334,6 @@ void Scan_encodeer_b(void)
 
 
 
-#endif
-////////////////////////////////////////////////////////////////
-#if 0
-u8 xdata BitBmEn_b;
-u8 xdata BitBmInfo_b ;
-u8 xdata BitBmEn_a;
-u8 xdata BitBmInfo_a ;
-//
-u8 xdata BitTEST;
-
-void encoder_a()
-{
-  u8 i = 0;
-  //
-  static u8 CurrentCode_a,LastCode_a,Codecnt_a;
-  //
-  if(EC1_A) i|= 0x01;
-  if(EC1_B) i|= 0x02;
-  //
-  if(CurrentCode_a != i)
-    {
-      CurrentCode_a = i;
-      Codecnt_a = 30;
-    }
-  if(Codecnt_a)Codecnt_a--;
-  else
-    {
-      //	if(BitBmEn_a == 0)
-      {
-        if(CurrentCode_a == 3)
-          {
-            if(LastCode_a == 1)
-              {
-                BitBmEn_a = 1;
-                BitBmInfo_a = 0;
-              }
-            else if (LastCode_a == 2)
-              {
-                BitBmEn_a = 1;
-                BitBmInfo_a = 1;
-              }
-          }
-        LastCode_a = CurrentCode_a;
-      }
-    }
-
-}
-
-void encoder_b()
-{
-  u8 i = 0;
-  //
-  static u8 CurrentCode_b,LastCode_b,Codecnt_b;
-  //
-  if(EC2_A) i|= 0x01;
-  if(EC2_B) i|= 0x02;
-  //
-  if(CurrentCode_b != i)
-    {
-      CurrentCode_b = i;
-      Codecnt_b = 30;
-    }
-  if(Codecnt_b)Codecnt_b--;
-  else
-    {
-      //if(BitBmEn_b == 0)
-      {
-        if(CurrentCode_b == 3)
-          {
-            if(LastCode_b == 1)
-              {
-                BitBmEn_b = 1;
-                BitBmInfo_b = 0;
-              }
-            else if (LastCode_b == 2)
-              {
-                BitBmEn_b = 1;
-                BitBmInfo_b = 1;
-              }
-          }
-        LastCode_b = CurrentCode_b;
-      }
-    }
-
-}
-void encoder_a_ctrl()
-{
-  if(BitBmEn_a)
-    {
-      BitBmEn_a = 0;
-      if(BitBmInfo_a)
-        {
-          BitTEST = 1;
-        }
-      else
-        {
-          BitTEST =2;
-        }
-    }
-}
-u8 BitTESTb;
-
-void encoder_b_ctrl()
-{
-  if(BitBmEn_b)
-    {
-      BitBmEn_b = 0;
-      if(BitBmInfo_b)
-        {
-          BitTESTb = 1;
-        }
-      else
-        {
-          BitTESTb =2;
-        }
-    }
-}
 #endif
 
 

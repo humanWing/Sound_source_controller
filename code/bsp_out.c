@@ -165,3 +165,137 @@ void Mute_ctrl(void)
       MUTE = 1;						//Ω˚”√
     }
 }
+
+
+
+void bsp_voice_select_inchannel_down(void)
+{
+    if(eb_voice_input_channel > input_channel_1)
+    {
+        eb_voice_input_channel--;
+        BitDisplayData_chang = 1;
+        BitDataCharg = 1;	
+    }
+}
+
+void bsp_voice_select_inchannel_plus(void)
+{
+    if(eb_voice_input_channel < input_channel_2)
+    {
+        eb_voice_input_channel++;
+        BitDisplayData_chang = 1;
+        BitDataCharg = 1;
+    }
+}
+
+
+void bsp_voice_select_outchannel_down(void)
+{
+    if(eb_voice_output_channel > output_channel_1)
+    {
+        eb_voice_output_channel--;
+        BitDisplayData_chang = 1;
+        BitDataCharg = 1;
+    }
+}
+
+void bsp_voice_select_outchannel_plus(void)
+{
+    if(eb_voice_output_channel < output_channel_4)
+    {
+        eb_voice_output_channel++;
+        BitDisplayData_chang = 1;
+        BitDataCharg = 1;
+    }
+}
+
+void bsp_voice_plus(void)
+{
+    if ((BitVoiceMute == 0)
+     && (eb_voice_level < VOLUME_MAX_CLASS))
+    {
+        eb_voice_level++;
+        BitDisplayData_chang = 1;
+        eb_button_change_motor_sta = 1;
+        BitDataCharg = 1;
+    }
+}
+
+void bsp_voice_fast_plus(void)
+{
+    uint8_t temp_buff;
+
+    if ((BitVoiceMute == 0)
+     && (eb_voice_level < VOLUME_MAX_CLASS))
+    {
+        temp_buff = VOLUME_MAX_CLASS - eb_voice_level;
+
+        if (temp_buff >= 10)
+        {
+            eb_voice_level = eb_voice_level + 10;
+        }
+        else
+        {
+            eb_voice_level = eb_voice_level + temp_buff;
+        }
+
+        BitDisplayData_chang = 1;
+        eb_button_change_motor_sta = 1;
+        BitDataCharg = 1;
+    }
+}
+
+void bsp_voice_minus(void)
+{
+    if ((BitVoiceMute == 0)
+     && (eb_voice_level > VOLUME_MIN_CLASS))
+    {
+        eb_voice_level--;
+        BitDisplayData_chang = 1;
+        eb_button_change_motor_sta = 1;
+        BitDataCharg = 1;
+    }
+}
+
+void bsp_voice_fast_minus(void)
+{
+    uint8_t temp_buff;
+    if ((BitVoiceMute == 0)
+     && (eb_voice_level > VOLUME_MIN_CLASS))
+    {
+        temp_buff = eb_voice_level - VOLUME_MIN_CLASS;
+
+        if (temp_buff >= 10)
+        {
+            eb_voice_level = eb_voice_level - 10;
+        }
+        else
+        {
+            eb_voice_level = eb_voice_level - temp_buff;
+        }
+
+        BitDisplayData_chang = 1;
+        eb_button_change_motor_sta = 1;
+        BitDataCharg = 1;
+    }
+}
+
+void bsp_voice_reset_customer_setting(void)
+{
+    if ((BitVoiceMute == 0)
+     && (eb_voice_level != 20))
+    {
+        eb_voice_level = 20;
+        BitDisplayData_chang = 1;
+        eb_button_change_motor_sta = 1;
+        BitDataCharg = 1;
+    }
+}
+
+
+void bsp_voice_mute_toggle(void)
+{
+    BitDisplayData_chang = 1;
+    //øÿ÷∆Ω˚”√“Ù∆µ
+    BitVoiceMute = ~BitVoiceMute;
+}

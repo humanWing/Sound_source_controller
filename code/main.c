@@ -164,7 +164,7 @@ void TMR1_Config(void)
   /*
   (1)设置Timer的运行模式
   */
-  TMR_ConfigRunMode(TMR1, TMR_MODE_TIMING,TMR_TIM_AUTO_8BIT);
+  TMR_ConfigRunMode(TMR1, TMR_MODE_TIMING, TMR_TIM_16BIT);
   /*
   (2)设置Timer 运行时钟
   */
@@ -173,17 +173,17 @@ void TMR1_Config(void)
   /*
   (3)设置Timer周期
   */
-  TMR_ConfigTimerPeriod(TMR1, 256-200, 256-200); 				// 200*0.5us = 100us,递增计数
+  TMR_ConfigTimerPeriod(TMR1, 0, 0); 				// 200*0.5us = 100us,递增计数
   //TMR_ConfigTimerPeriod(TMR0, 256-100, 256-100); 					//100*1us = 100us
   /*
   (4)开启中断
   */
-  TMR_EnableOverflowInt(TMR1);
+  // TMR_EnableOverflowInt(TMR1);
 
   /*
   (5)设置Timer中断优先级
   */
-  IRQ_SET_PRIORITY(IRQ_TMR1, IRQ_PRIORITY_HIGH);
+  // IRQ_SET_PRIORITY(IRQ_TMR1, IRQ_PRIORITY_HIGH);
   //IRQ_ALL_ENABLE();
 
   /*
@@ -258,7 +258,7 @@ int main(void)
   TMR1_Config();
 // WDT_Config();
 
-  TMR_Start(TMR1);
+  // TMR_Start(TMR1);
   // P0EXTIE |= 0x01;
   EXTINT_EnableInt(EXTINT0);
 

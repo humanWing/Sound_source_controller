@@ -35,6 +35,7 @@ extern xdata u8 BitVoiceLevelBack;
 
 //外部调用函数声明
 void IR_Init();		//初始化
-void IR_RX(void);
+// void bsp_ir_data_time_count(void);
+void bsp_ir_rec_time_interval_count(void);
 void bsp_ir_event_pro(uint16_t ir_key_num);
 #endif

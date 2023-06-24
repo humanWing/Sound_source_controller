@@ -84,13 +84,13 @@ void INT0_IRQHandler(void)  interrupt INT0_VECTOR
 ******************************************************************************/
 void Timer0_IRQHandler(void)  interrupt TMR0_VECTOR
 {
-
-  BitTime100us = 1;
-  if(++VarTimer1ms >= 10)		//时间基值 100us
+    BitTime100us = 1;
+    if(++VarTimer1ms >= 10)		//时间基值 100us
     {
       VarTimer1ms = 0;
       BitTimer1ms = 1;
     }
+    bsp_ir_rec_time_interval_count();
 }
 /******************************************************************************
  ** \brief	 INT0 interrupt service function
@@ -112,7 +112,7 @@ void INT1_IRQHandler(void)  interrupt INT1_VECTOR
 ******************************************************************************/
 void Timer1_IRQHandler(void)  interrupt TMR1_VECTOR
 {
-    IR_RX();
+    // bsp_ir_data_time_count();
 }
 /******************************************************************************
  ** \brief	 UART 0 interrupt service function

@@ -2,7 +2,7 @@
  * @Author: Lkw 1332861164@qq.com
  * @Date: 2023-06-09 23:35:03
  * @LastEditors: Lkw 1332861164@qq.com
- * @LastEditTime: 2023-06-20 23:18:39
+ * @LastEditTime: 2023-06-24 21:12:08
  * @FilePath: \CMS8S6990_6_10\code\all.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -35,7 +35,7 @@
 
 typedef enum
 {
-    input_channel_1,
+    input_channel_1=1,
     input_channel_2,
     input_channel_max,
 } voice_input_channel_e;
@@ -76,4 +76,16 @@ extern u8 xdata VarAutoSet ;
 
 extern u8 xdata BitDataCharg ;
 //
+
+extern void bsp_voice_select_inchannel_down(void);
+extern void bsp_voice_select_inchannel_plus(void);
+extern void bsp_voice_select_outchannel_down(void);
+extern void bsp_voice_select_outchannel_plus(void);
+extern void bsp_voice_plus(void);
+extern void bsp_voice_fast_plus(void);
+extern void bsp_voice_minus(void);
+extern void bsp_voice_fast_minus(void);
+extern void bsp_voice_reset_customer_setting(void);
+extern void bsp_voice_mute_toggle(void);
+
 #endif

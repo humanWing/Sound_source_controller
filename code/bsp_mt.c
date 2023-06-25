@@ -30,9 +30,9 @@ sbit 	 IN_B = P2^5;						//∂®“Â
 //  VDD / 4096 = Vr /Vadc
 code  u16 Voice_Adc_Table[255]=
 {
-  0XFFA,
-  0XFE9,
-  0XFDD,
+  0XFF6,
+  0XFE6,
+  0XFD8,
   0XFD0,
   0XFC0,
   0XFB1,

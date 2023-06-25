@@ -12,7 +12,7 @@ sbit 	 EC2_A = P3^6;						//定义
 sbit 	 EC2_B = P0^5;						//定义
 sbit 	 EC2_SW = P2^6;						//定义
 
-bit BitDisplayData_chang;
+bit  BitDisplayData_chang;
 
 sbit EC_B1 = P0 ^ 0;   // 编码器 P0.0 端口
 sbit EC_A1 = P1 ^ 3;   // 编码器 P1.3 端口
@@ -56,6 +56,7 @@ void encoder_init()
   EC_B1_old = EC1_A;
   EC_A1_old = EC1_B;
 
+  BitDisplayData_chang = 1;
 }
 #if 1
 
@@ -185,13 +186,13 @@ void encoder_a(void)
     case 1://正转
       eb_voice_output_channel = eb_voice_output_channel < 4 ? (eb_voice_output_channel+1) : 1;
       BitDisplayData_chang = 1;
-      BitDataCharg = 1;
+      eBit_DataCharg = 1;
     break;
 
     case 2://反转
       eb_voice_output_channel = eb_voice_output_channel > 1 ? (eb_voice_output_channel-1) : 4;
       BitDisplayData_chang = 1;
-      BitDataCharg = 1;
+      eBit_DataCharg = 1;
     break;
 
     default :
@@ -203,12 +204,15 @@ void encoder_a(void)
 
 void encoder_b(void)
 {
+	if(BitVoiceMute)
+  {
+      return;
+  }
 
-  //使用方式：
-  KEY_state_B = EncoderReading_B(); //编码器
-	if(BitVoiceMute)  return ;				//静音时退出。
-	//
-  switch (KEY_state_B)
+    //使用方式：
+    KEY_state_B = EncoderReading_B(); //编码器
+    //
+    switch (KEY_state_B)
     {
     case 1://正转
       
@@ -219,7 +223,7 @@ void encoder_b(void)
 
       BitDisplayData_chang = 1;			//数据有更改标志位置1
       eb_button_change_motor_sta = 1;
-      BitDataCharg = 1;
+      eBit_DataCharg = 1;
     break;
 
     case 2://反转
@@ -230,7 +234,7 @@ void encoder_b(void)
   
       BitDisplayData_chang = 1;
       eb_button_change_motor_sta = 1;
-      BitDataCharg = 1;
+      eBit_DataCharg = 1;
     break;
 
     default :
@@ -266,7 +270,7 @@ void Scan_encodeer_a(void)
               BitK1LastStatus = 1;
               BitDisplayData_chang = 1;		//显示更新标志
               //
-              BitDataCharg = 1;						//数据保存更新标志
+              eBit_DataCharg = 1;						//数据保存更新标志
               if(eb_voice_input_channel >= 2)
                 {
                   eb_voice_input_channel = 1;

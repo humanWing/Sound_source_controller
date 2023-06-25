@@ -44,7 +44,7 @@ void out_init(void)
   OUT_3 = 0;
   OUT_4 = 0;
   //
-  MUTE = 0;
+  MUTE = 1;
   //
   GPIO_SET_MUX_MODE(P23CFG, GPIO_MUX_GPIO);
   GPIO_ENABLE_OUTPUT(P2TRIS, GPIO_PIN_3);
@@ -81,7 +81,7 @@ void out_init(void)
 */
 void out_ctrl()
 {
-  if(BitDisplayOn  &&  (!BitVoiceMute))		//开启状态下进入
+  if(!BitVoiceMute)		//开启状态下进入
     {
       //输入通道控制
       if(eb_voice_input_channel == 1)
@@ -149,64 +149,49 @@ void out_ctrl()
 */
 void Mute_ctrl(void)
 {
-  if(BitDisplayOn)
-    {
-      if(BitVoiceMute)		//静音标志
-        {
-          MUTE = 1;				//禁用
-        }
-      else
-        {
-          MUTE = 0;				//打开
-        }
-    }
+  if(BitVoiceMute)		//静音标志
+  {
+      MUTE = 1;				//禁用
+  }
   else
-    {
-      MUTE = 1;						//禁用
-    }
+  {
+      MUTE = 0;				//打开
+  }
 }
 
 
 
 void bsp_voice_select_inchannel_down(void)
 {
-    if(eb_voice_input_channel > input_channel_1)
-    {
-        eb_voice_input_channel--;
-        BitDisplayData_chang = 1;
-        BitDataCharg = 1;	
-    }
+    eb_voice_input_channel = eb_voice_input_channel > output_channel_1 ?
+    (eb_voice_input_channel - 1) : 2;
+    BitDisplayData_chang = 1;
+    eBit_DataCharg = 1;
 }
 
 void bsp_voice_select_inchannel_plus(void)
 {
-    if(eb_voice_input_channel < input_channel_2)
-    {
-        eb_voice_input_channel++;
-        BitDisplayData_chang = 1;
-        BitDataCharg = 1;
-    }
+    eb_voice_input_channel = eb_voice_input_channel < input_channel_2 ?\
+    (eb_voice_input_channel + 1) : 1;
+    BitDisplayData_chang = 1;
+    eBit_DataCharg = 1;
 }
 
 
 void bsp_voice_select_outchannel_down(void)
 {
-    if(eb_voice_output_channel > output_channel_1)
-    {
-        eb_voice_output_channel--;
-        BitDisplayData_chang = 1;
-        BitDataCharg = 1;
-    }
+    eb_voice_output_channel = eb_voice_output_channel > output_channel_1 ?
+    (eb_voice_output_channel - 1) : 4;
+    BitDisplayData_chang = 1;
+    eBit_DataCharg = 1;
 }
 
 void bsp_voice_select_outchannel_plus(void)
 {
-    if(eb_voice_output_channel < output_channel_4)
-    {
-        eb_voice_output_channel++;
-        BitDisplayData_chang = 1;
-        BitDataCharg = 1;
-    }
+    eb_voice_output_channel = eb_voice_output_channel < output_channel_4 ?\
+    (eb_voice_output_channel + 1) : 1;
+    BitDisplayData_chang = 1;
+    eBit_DataCharg = 1;
 }
 
 void bsp_voice_plus(void)
@@ -217,7 +202,7 @@ void bsp_voice_plus(void)
         eb_voice_level++;
         BitDisplayData_chang = 1;
         eb_button_change_motor_sta = 1;
-        BitDataCharg = 1;
+        eBit_DataCharg = 1;
     }
 }
 
@@ -241,7 +226,7 @@ void bsp_voice_fast_plus(void)
 
         BitDisplayData_chang = 1;
         eb_button_change_motor_sta = 1;
-        BitDataCharg = 1;
+        eBit_DataCharg = 1;
     }
 }
 
@@ -253,7 +238,7 @@ void bsp_voice_minus(void)
         eb_voice_level--;
         BitDisplayData_chang = 1;
         eb_button_change_motor_sta = 1;
-        BitDataCharg = 1;
+        eBit_DataCharg = 1;
     }
 }
 
@@ -276,7 +261,7 @@ void bsp_voice_fast_minus(void)
 
         BitDisplayData_chang = 1;
         eb_button_change_motor_sta = 1;
-        BitDataCharg = 1;
+        eBit_DataCharg = 1;
     }
 }
 
@@ -288,7 +273,7 @@ void bsp_voice_reset_customer_setting(void)
         eb_voice_level = 20;
         BitDisplayData_chang = 1;
         eb_button_change_motor_sta = 1;
-        BitDataCharg = 1;
+        eBit_DataCharg = 1;
     }
 }
 

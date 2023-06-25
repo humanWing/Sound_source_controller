@@ -2,7 +2,7 @@
  * @Author: Lkw 1332861164@qq.com
  * @Date: 2023-06-09 23:35:03
  * @LastEditors: Lkw 1332861164@qq.com
- * @LastEditTime: 2023-06-24 21:12:08
+ * @LastEditTime: 2023-06-25 22:01:47
  * @FilePath: \CMS8S6990_6_10\code\all.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -71,10 +71,8 @@ typedef enum
 extern u8 xdata eb_voice_input_channel;					//输入通道
 extern u8 xdata eb_voice_output_channel;				//输出通道
 extern u8 xdata eb_voice_level;		//音频等级
-extern u8 xdata SysStatus;				//系统状态
-extern u8 xdata VarAutoSet ;
 
-extern u8 xdata BitDataCharg ;
+extern u8 xdata eBit_DataCharg ;
 //
 
 extern void bsp_voice_select_inchannel_down(void);

@@ -28,7 +28,7 @@ sbit 	 IN_A = P2^4;						//定义
 sbit 	 IN_B = P2^5;						//定义
 //音频等级对应的ADC的数据
 //  VDD / 4096 = Vr /Vadc
-code  u16 Voice_Adc_Table[255]=
+code u16 Voice_Adc_Table[255]=
 {
   0XFF6,
   0XFE6,

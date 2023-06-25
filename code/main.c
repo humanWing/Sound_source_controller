@@ -43,22 +43,15 @@ extern u8 xdata 	BitTimer1ms;
 /*	Global variable definitions(declared in header file with 'extern')
 全局变量
 *****************************************************************************/
-u16 xdata 		VarTimer100ms;
-u8 xdata 		VarTimer500ms ;
-u8 xdata    VarTimer1s;
-u8 xdata 		BitTimer10ms;
-u8 xdata 		VarTimer10ms;
-u16 xdata VarWirtFlashCnt;
-//
+static u8  xdata 	VarTimer10ms;
+static u16 xdata  VarWirtFlashCnt;
+
+
 u8 xdata eb_voice_input_channel;				//输入通道
 u8 xdata eb_voice_output_channel;				//输出通道
-u8 xdata eb_voice_level;		//音频等级
-u8 xdata BitVoice_En;			//使能标志
+u8 xdata eb_voice_level;		            //音频等级
 
-u8 xdata SysStatus;				//系统状态
-u8 xdata VarAutoSet ;
-//
-u8 xdata BitDataCharg = 0;
+u8 xdata eBit_DataCharg = 0;
 /****************************************************************************/
 /*	Local type definitions('typedef')
 *****************************************************************************/
@@ -66,58 +59,13 @@ u8 xdata BitDataCharg = 0;
 /****************************************************************************/
 /*	Local variable  definitions('static')
 *****************************************************************************/
-uint32_t Systemclock = 24000000;
+
 
 /****************************************************************************/
 /*	Local function prototypes('static')
 *****************************************************************************/
-/**************************************************************
-*函数名称：TimeMain
-*函数功能：时间累计  控制.
-**************************************************************/
-void TimeMain(void)
-{
-  VarTimer100ms++;
 
-  if (VarTimer100ms >= 10)
-    {
-      VarTimer100ms = 0;                                          //100ms定时.
-      //
-    }
 
-  VarTimer500ms++;
-
-  if (VarTimer500ms >= 50)                                         //500ms定时.
-    {
-      VarTimer500ms = 0;
-    }
-  //
-  VarTimer1s ++;
-  if (VarTimer1s >= 200)                                          //1s计时.
-    {
-      VarTimer1s = 0;
-      //
-    }
-
-}
-/**************************************************************
-利用定时器-延时子程序.
-***************************************************************/
-void Delay10ms(u8 Time)
-{
-  u8 i;
-  i = Time;
-
-  while(i)
-    {
-      if (BitTimer10ms)
-        {
-          // WDTCON |= 0x10;
-          BitTimer10ms = 0;
-          i--;
-        }
-    }
-}
 /**************************************************
 *函数名称：void TMR0_Config(void)
 *函数功能：定时器TMR0初始化
@@ -192,19 +140,6 @@ void TMR1_Config(void)
   // TMR_Start(TMR0);
 }
 
-// void time1_start(void)
-// {
-//   TMR_Start(TMR1);
-//   P0EXTIE |= 0x01;
-// }
-
-// void time1_stop(void)
-// {
-//   TMR_Stop(TMR1);
-// }
-
-// P0EXTIE |= 0x01;
-// P0EXTIE &= 0xfe;
 /******************************************************************************
  ** \brief	 WDT_Config
  ** \param [in]
@@ -242,13 +177,21 @@ void WDT_Config(void)
  **
  ** \return 0
  *****************************************************************************/
-extern uint16_t bsp_ir_data_raw(void);
+void reset_parameter(void)
+{
+    VarTimer10ms    = 0;
+    VarWirtFlashCnt = 0;
+    eBit_DataCharg  = 0;
+
+    BitVoiceMute = 0;			//音量静音标志
+
+}
 
 int main(void)
 {
   EA = 0;
+  bsp_tm1620_init();		//显示
   encoder_init();				//编码器初始化
-  init_TM1620();				//显示
   IR_Init();						//IR初始化
   mt_init();					  //马达驱动
   out_init();						//输入输出通道设置
@@ -258,68 +201,48 @@ int main(void)
   TMR1_Config();
 // WDT_Config();
 
-  // TMR_Start(TMR1);
-  // P0EXTIE |= 0x01;
-  EXTINT_EnableInt(EXTINT0);
-
+  reset_parameter();
+  
   EA = 1;								//开启全局中断
-  //led_show();				 	//显示测试
-  SysStatus = 0;				//显示dly  --3 倒计时
-  VarAutoSet = 3;				//
-  BitDisplayOn = 1;			//
-  BitVoiceMute = 0;			//音量静音标志
 
   while(1)
   {
       // WDT_ClearWDT();								  //看门狗喂狗
-      if(SysStatus)												//系统启动后才扫描编码器
-      {
-          encoder_a();										//旋转编码器
-          encoder_b();
-      }
+      encoder_a();										//旋转编码器
+      encoder_b();
 
       if(BitTimer1ms)											//1ms--定时时基
       {
           BitTimer1ms = 0;
-          display();											//显示刷新
+          
+          bsp_1620_update_display();											//显示刷新
 
-          switch(SysStatus)	 							//系统状态
-            {
-            case 0:
-              auto_countdown();						//倒计时
-              break;
+          if(++VarTimer10ms >= 10)		//10ms
+          {
+              VarTimer10ms = 0;
 
-            case 1:
-              if(++VarTimer10ms >= 10)		//10ms
-              {
-                  BitTimer10ms = 1;
-                  VarTimer10ms = 0;
+              Scan_encodeer_a();			//独立按键
+              Scan_encodeer_b();
+              out_ctrl();							//输入输出控制
+              Mute_ctrl();						//静音控制--默认关闭
+              mt_ctrl();							//马达控制
+          }
 
-                  Scan_encodeer_a();			//独立按键
-                  Scan_encodeer_b();
-                  out_ctrl();							//输入输出控制
-                  Mute_ctrl();						//静音控制--默认关闭
-                  mt_ctrl();							//马达控制
-              }
-              if ((++VarWirtFlashCnt >= 500 ) && BitDataCharg)		//10ms*1000  且数据有变化才进行更新
-              {
-                  VarWirtFlashCnt = 0;
-                  BitDataCharg = 0;
-                  //
-                  FLASH_UnLock();						//解锁
-                  FLASH_Erase(FLASH_DATA,0);//擦除对应所在这一页
-                  FLASH_Write(FLASH_DATA,0x0, 0x55);			//写入标志
-                  FLASH_Write(FLASH_DATA,0x1, 0x2a);
-                  FLASH_Write(FLASH_DATA,0x2, eb_voice_input_channel);	//写入初始数据
-                  FLASH_Write(FLASH_DATA,0x3, eb_voice_output_channel);
-                  FLASH_Write(FLASH_DATA,0x4, eb_voice_level);
-                  FLASH_Lock();						//锁
-              }
-              break;
-
-            default:
-              break;
-        }
+          if ((eBit_DataCharg == 1)
+            && (++VarWirtFlashCnt >= 500))
+          {
+              VarWirtFlashCnt = 0;
+              eBit_DataCharg = 0;
+              //
+              FLASH_UnLock();						//解锁
+              FLASH_Erase(FLASH_DATA,0);//擦除对应所在这一页
+              FLASH_Write(FLASH_DATA,0x0, 0x55);			//写入标志
+              FLASH_Write(FLASH_DATA,0x1, 0x2a);
+              FLASH_Write(FLASH_DATA,0x2, eb_voice_input_channel);	//写入初始数据
+              FLASH_Write(FLASH_DATA,0x3, eb_voice_output_channel);
+              FLASH_Write(FLASH_DATA,0x4, eb_voice_level);
+              FLASH_Lock();						//锁
+          }
       }
     }
 }

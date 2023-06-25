@@ -376,11 +376,11 @@ void mt_ctrl(void)
   {
       VarADData_Vlaue = GetADValue(0, 8);
       
-      if (VarADData_Vlaue > Voice_Adc_Table[eb_voice_level] + 10)
+      if (VarADData_Vlaue > Voice_Adc_Table[VOLUME_MAX_CLASS - eb_voice_level] + 10)
       {
           BitMTDirection_Forward = MOTOR_ANTICLOCKWISE_TURN;
       }
-      else if (VarADData_Vlaue < Voice_Adc_Table[eb_voice_level] - 10)
+      else if (VarADData_Vlaue < Voice_Adc_Table[VOLUME_MAX_CLASS - eb_voice_level] - 10)
       {
           BitMTDirection_Forward = MOTOR_CLOCKWISE_TURN;
       }
@@ -403,11 +403,11 @@ void mt_ctrl(void)
 
           if (eb_voice_level > VarVoiceLevel_Back )
           {
-              BitMTDirection_Forward = MOTOR_CLOCKWISE_TURN;
+              BitMTDirection_Forward = MOTOR_ANTICLOCKWISE_TURN;
           }
           else if (eb_voice_level < VarVoiceLevel_Back)
           {
-              BitMTDirection_Forward = MOTOR_ANTICLOCKWISE_TURN;
+              BitMTDirection_Forward = MOTOR_CLOCKWISE_TURN;
           }
           else
           {
@@ -423,7 +423,7 @@ void mt_ctrl(void)
       MotorStop();
       VarADData_Vlaue = GetADValue(0, 8);
 
-      if(VarADData_Vlaue < (Voice_Adc_Table[VarVoiceLevel_Back]))
+      if(VarADData_Vlaue < (Voice_Adc_Table[VOLUME_MAX_CLASS - VarVoiceLevel_Back]))
       {
           MotorForward();
       }
@@ -437,7 +437,7 @@ void mt_ctrl(void)
       MotorStop();
       VarADData_Vlaue = GetADValue(0, 8);
       
-      if(VarADData_Vlaue > (Voice_Adc_Table[VarVoiceLevel_Back]) )
+      if(VarADData_Vlaue > (Voice_Adc_Table[VOLUME_MAX_CLASS - VarVoiceLevel_Back]) )
       {
           MotorReverse();
       }

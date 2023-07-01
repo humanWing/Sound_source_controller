@@ -43,9 +43,9 @@ extern u8 xdata 	BitTimer1ms;
 /*	Global variable definitions(declared in header file with 'extern')
 全局变量
 *****************************************************************************/
-static u8  xdata 	VarTimer10ms;
-static u16 xdata  VarWirtFlashCnt;
+u16 xdata  VarWirtFlashCnt;
 
+u8 xdata ub_20ms_unit_time;
 
 u8 xdata eb_voice_input_channel;				//输入通道
 u8 xdata eb_voice_output_channel;				//输出通道
@@ -156,12 +156,14 @@ void WDT_Config(void)
   /*
   (2)开启WDT溢出时间
   */
-  WDT_ConfigOverflowTime(WDT_CLK_4194304);	// Fsys=24Mhz -> Twdt = 4194304/24 = 174.76ms
+  WDT_ConfigOverflowTime(WDT_CLK_67108864);	// Fsys=24Mhz -> Twdt = 4194304/24 = 174.76ms
+
+  SYS_EnableWDTReset();
   /*
   (3)设置WDT溢出中断
   */
   //WDT_EnableOverflowInt();
-
+  WDT_DisableOverflowInt();
   //IRQ_SET_PRIORITY(IRQ_WDT, IRQ_PRIORITY_HIGH);
   //IRQ_ALL_ENABLE();
 
@@ -179,7 +181,7 @@ void WDT_Config(void)
  *****************************************************************************/
 void reset_parameter(void)
 {
-    VarTimer10ms    = 0;
+    ub_20ms_unit_time    = 0;
     VarWirtFlashCnt = 0;
     eBit_DataCharg  = 0;
 
@@ -199,7 +201,7 @@ int main(void)
   adc_config();					//adc初始化
   TMR0_Config();				//定时器初始化
   TMR1_Config();
-// WDT_Config();
+  WDT_Config();
 
   reset_parameter();
   
@@ -207,7 +209,6 @@ int main(void)
 
   while(1)
   {
-      // WDT_ClearWDT();								  //看门狗喂狗
       encoder_a();										//旋转编码器
       encoder_b();
 
@@ -217,19 +218,8 @@ int main(void)
           
           bsp_1620_update_display();											//显示刷新
 
-          if(++VarTimer10ms >= 10)		//10ms
-          {
-              VarTimer10ms = 0;
-
-              Scan_encodeer_a();			//独立按键
-              Scan_encodeer_b();
-              out_ctrl();							//输入输出控制
-              Mute_ctrl();						//静音控制--默认关闭
-              mt_ctrl();							//马达控制
-          }
-
           if ((eBit_DataCharg == 1)
-            && (++VarWirtFlashCnt >= 500))
+            && (++VarWirtFlashCnt >= 5000))
           {
               VarWirtFlashCnt = 0;
               eBit_DataCharg = 0;
@@ -243,6 +233,18 @@ int main(void)
               FLASH_Write(FLASH_DATA,0x4, eb_voice_level);
               FLASH_Lock();						//锁
           }
+      }
+
+      if(ub_20ms_unit_time == 1)		//10ms
+      {
+          WDT_ClearWDT();								  //看门狗喂狗
+          ub_20ms_unit_time = 0;
+
+          Scan_encodeer_a();			//独立按键
+          Scan_encodeer_b();
+          out_ctrl();							//输入输出控制
+          Mute_ctrl();						//静音控制--默认关闭
+          mt_ctrl();							//马达控制
       }
     }
 }

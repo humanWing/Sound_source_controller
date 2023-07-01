@@ -2,7 +2,7 @@
  * @Author: Lkw 1332861164@qq.com
  * @Date: 2023-06-09 23:35:03
  * @LastEditors: Lkw 1332861164@qq.com
- * @LastEditTime: 2023-06-25 22:01:47
+ * @LastEditTime: 2023-07-01 14:18:02
  * @FilePath: \CMS8S6990_6_10\code\all.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -74,6 +74,7 @@ extern u8 xdata eb_voice_level;		//音频等级
 
 extern u8 xdata eBit_DataCharg ;
 //
+extern u16 xdata  VarWirtFlashCnt;
 
 extern void bsp_voice_select_inchannel_down(void);
 extern void bsp_voice_select_inchannel_plus(void);

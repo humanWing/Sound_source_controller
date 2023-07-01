@@ -39,7 +39,11 @@
 ****************************************************************************/
 u8 xdata 	BitTimer1ms;
 u8 xdata VarTimer1ms;
-u8 xdata 	BitTime100us;
+u8 xdata ub_20ms_base_cnt;
+
+extern u8 xdata ub_20ms_unit_time;
+extern uint8_t xdata ub_100us_delay_size;
+
 /****************************************************************************/
 /*	Global variable definitions(declared in header file with 'extern')
 ****************************************************************************/
@@ -84,12 +88,27 @@ void INT0_IRQHandler(void)  interrupt INT0_VECTOR
 ******************************************************************************/
 void Timer0_IRQHandler(void)  interrupt TMR0_VECTOR
 {
-    BitTime100us = 1;
     if(++VarTimer1ms >= 10)		//时间基值 100us
     {
       VarTimer1ms = 0;
       BitTimer1ms = 1;
+
+      if (ub_20ms_unit_time == 0)
+      {
+          ub_20ms_base_cnt++;
+          if (ub_20ms_base_cnt >= 20)
+          {
+              ub_20ms_base_cnt = 0;
+              ub_20ms_unit_time = 1;
+          }
+      }
     }
+
+    if (ub_100us_delay_size > 0)
+    {
+        ub_100us_delay_size--;
+    }
+    
     bsp_ir_rec_time_interval_count();
 }
 /******************************************************************************

@@ -90,17 +90,27 @@ xdata u8 TM1620_temp[6] = {0};
 // 入口参数：要操作的数据
 // 出口参数：无
 //***************************************/
-void delay_ms(u8 cyc)
-{
-  u8 ii,jj;
 
-  for(jj=1; jj<=cyc; jj++)
-    {
-      for(ii=0; ii<150; ii++)
-        {
-          _nop_();
-        }
-    }
+// 100 us
+uint8_t xdata ub_100us_delay_size = 0;
+uint16_t xdata ub_100us_timeout_cnt = 0;
+
+void delay_ms(void)
+{
+  ub_100us_delay_size = 4;
+
+  while(ub_100us_delay_size != 0)
+  {
+      ub_100us_timeout_cnt++;
+
+      if (ub_100us_timeout_cnt > 2000)
+      {
+          ub_100us_timeout_cnt = 0;
+          return;
+      }
+  }
+
+  ub_100us_timeout_cnt = 0;
 }
 
 //*************************************
@@ -124,9 +134,9 @@ void TM1620_Write(u8 wr_data)
         {
           DIO = 0;
         }
-      delay_ms(10);
+      delay_ms();
       CLK = 1;
-      delay_ms(10);
+      delay_ms();
       wr_data>>=1;						//移位数据  低位在前
   }
 }
@@ -141,7 +151,7 @@ void Write_COM(unsigned char cmd)//
 {
   STB = 1;
   //TimeDelay_us(10);
-  delay_ms(10);
+  delay_ms();
   STB = 0;
   TM1620_Write(cmd);
 }
@@ -234,22 +244,25 @@ void bsp_1620_update_display(void)
     if(BitDisplayData_chang)			//数据有更改时，进行显示刷新
     {
 
-        //输入通道
-        TM1620_temp[0] = eb_voice_input_channel;			//
-
-        TM1620_temp[1] = 13;						// -
-        //输出通道
-        TM1620_temp[2] = eb_voice_output_channel;			//
 
         //音频等级
         if(BitVoiceMute)							//禁用音量
         {
+            TM1620_temp[0] = 13;			//-			显示“-”
+            TM1620_temp[1] = 13;			//-
+            TM1620_temp[2] = 13;			//-
             TM1620_temp[3] = 13;			//-			显示“-”
             TM1620_temp[4] = 13;			//-
             TM1620_temp[5] = 13;			//-
         }
         else
         {
+            //输入通道
+            TM1620_temp[0] = eb_voice_input_channel;			//
+
+            TM1620_temp[1] = 13;						// -
+            //输出通道
+            TM1620_temp[2] = eb_voice_output_channel;			//
             TM1620_temp[3] = eb_voice_level/100;			//百位
             TM1620_temp[4] = eb_voice_level%100/10;	//十位
             TM1620_temp[5] = eb_voice_level%10;			//个位

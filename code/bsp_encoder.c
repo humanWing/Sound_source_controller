@@ -186,12 +186,14 @@ void encoder_a(void)
     case 1://正转
       eb_voice_output_channel = eb_voice_output_channel < 4 ? (eb_voice_output_channel+1) : 1;
       BitDisplayData_chang = 1;
+      VarWirtFlashCnt = 0;
       eBit_DataCharg = 1;
     break;
 
     case 2://反转
       eb_voice_output_channel = eb_voice_output_channel > 1 ? (eb_voice_output_channel-1) : 4;
       BitDisplayData_chang = 1;
+      VarWirtFlashCnt = 0;
       eBit_DataCharg = 1;
     break;
 
@@ -223,6 +225,7 @@ void encoder_b(void)
 
       BitDisplayData_chang = 1;			//数据有更改标志位置1
       eb_button_change_motor_sta = 1;
+      VarWirtFlashCnt = 0;
       eBit_DataCharg = 1;
     break;
 
@@ -234,6 +237,7 @@ void encoder_b(void)
   
       BitDisplayData_chang = 1;
       eb_button_change_motor_sta = 1;
+      VarWirtFlashCnt = 0;
       eBit_DataCharg = 1;
     break;
 
@@ -268,17 +272,20 @@ void Scan_encodeer_a(void)
           if(BitK1LastStatus == 0)
             {
               BitK1LastStatus = 1;
-              BitDisplayData_chang = 1;		//显示更新标志
-              //
-              eBit_DataCharg = 1;						//数据保存更新标志
-              if(eb_voice_input_channel >= 2)
-                {
-                  eb_voice_input_channel = 1;
-                }
-              else
-                {
-                  eb_voice_input_channel ++;
-                }
+              if ((BitVoiceMute == 0)
+              {
+                  BitDisplayData_chang = 1;		//显示更新标志
+                  VarWirtFlashCnt = 0;
+                  eBit_DataCharg = 1;						//数据保存更新标志
+                  if(eb_voice_input_channel >= 2)
+                    {
+                      eb_voice_input_channel = 1;
+                    }
+                  else
+                    {
+                      eb_voice_input_channel ++;
+                    }
+              }
             }
         }
     }

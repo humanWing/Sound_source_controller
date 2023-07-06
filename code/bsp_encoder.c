@@ -272,7 +272,7 @@ void Scan_encodeer_a(void)
           if(BitK1LastStatus == 0)
             {
               BitK1LastStatus = 1;
-              if ((BitVoiceMute == 0)
+              if (BitVoiceMute == 0)
               {
                   BitDisplayData_chang = 1;		//显示更新标志
                   VarWirtFlashCnt = 0;

@@ -163,7 +163,7 @@ void Mute_ctrl(void)
 
 void bsp_voice_select_inchannel_down(void)
 {
-    if ((BitVoiceMute == 0)
+    if (BitVoiceMute == 0)
     {
         eb_voice_input_channel = eb_voice_input_channel > output_channel_1 ?
         (eb_voice_input_channel - 1) : 2;
@@ -175,7 +175,7 @@ void bsp_voice_select_inchannel_down(void)
 
 void bsp_voice_select_inchannel_plus(void)
 {
-    if ((BitVoiceMute == 0)
+    if (BitVoiceMute == 0)
     {
         eb_voice_input_channel = eb_voice_input_channel < input_channel_2 ?\
         (eb_voice_input_channel + 1) : 1;
@@ -188,9 +188,9 @@ void bsp_voice_select_inchannel_plus(void)
 
 void bsp_voice_select_outchannel_down(void)
 {
-    if ((BitVoiceMute == 0)
+    if (BitVoiceMute == 0)
     {
-        eb_voice_output_channel = eb_voice_output_channel > output_channel_1 ?
+        eb_voice_output_channel = eb_voice_output_channel > output_channel_1 ?\
         (eb_voice_output_channel - 1) : 4;
         BitDisplayData_chang = 1;
         VarWirtFlashCnt = 0;
@@ -200,7 +200,7 @@ void bsp_voice_select_outchannel_down(void)
 
 void bsp_voice_select_outchannel_plus(void)
 {
-    if ((BitVoiceMute == 0)
+    if (BitVoiceMute == 0)
     {
         eb_voice_output_channel = eb_voice_output_channel < output_channel_4 ?\
         (eb_voice_output_channel + 1) : 1;

@@ -149,6 +149,14 @@ void out_ctrl()
 */
 void Mute_ctrl(void)
 {
+  static uint8_t wait_pro_time = 0;
+
+  if (wait_pro_time < 200)   // 20ms:one time Mute_ctrl()
+  {
+    wait_pro_time++;
+    return;
+  }
+
   if(BitVoiceMute)		//¾²Òô±êÖ¾
   {
       MUTE = 1;				//½ûÓÃ
@@ -288,9 +296,9 @@ void bsp_voice_fast_minus(void)
 void bsp_voice_reset_customer_setting(void)
 {
     if ((BitVoiceMute == 0)
-     && (eb_voice_level != 20))
+     && (eb_voice_level != 30))
     {
-        eb_voice_level = 20;
+        eb_voice_level = 30;
         BitDisplayData_chang = 1;
         eb_button_change_motor_sta = 1;
         VarWirtFlashCnt = 0;

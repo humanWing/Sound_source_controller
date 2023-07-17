@@ -61,17 +61,17 @@ firstread:
   temp1 = FLASH_Read(FLASH_DATA,0);
   temp2 = FLASH_Read(FLASH_DATA,1);
   //
-  if((temp1 == 0x55 ) && (temp2 == 0x2a))	//不是0x55 0xaa说明是一次上电。
+    if((temp1 == 0x55 ) && (temp2 == 0x2a))	//不是0x55 0xaa说明是一次上电。
     {
       eb_voice_input_channel =FLASH_Read(FLASH_DATA,0x2);
       eb_voice_output_channel = FLASH_Read(FLASH_DATA,0x3);
       eb_voice_level = FLASH_Read(FLASH_DATA,0x4);
     }
-  else
+    else
     {
       eb_voice_input_channel =1;
       eb_voice_output_channel = 1;
-      eb_voice_level = VOLUME_MAX_CLASS / 2;
+      eb_voice_level = 30;
       //
       FLASH_Erase(FLASH_DATA,0);
       bsp_eer_delay(100);

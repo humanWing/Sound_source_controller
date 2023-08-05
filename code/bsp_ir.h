@@ -37,5 +37,5 @@ extern xdata u8 BitVoiceLevelBack;
 void IR_Init();		//≥ı ºªØ
 // void bsp_ir_data_time_count(void);
 void bsp_ir_rec_time_interval_count(void);
-void bsp_ir_event_pro(uint16_t ir_key_num);
+void bsp_ir_event_pro(uint8_t long_process);
 #endif

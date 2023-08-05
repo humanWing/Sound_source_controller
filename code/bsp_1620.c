@@ -228,14 +228,15 @@ void bsp_1620_update_display(void)
     display_1620();
     
   #elif (DEBUG_IR_FUNCTION == THIS_FUNCTION_ENABLE)
-    extern uint16_t bsp_ir_data_raw(void);
-    uint16_t temp = bsp_ir_data_raw();
+    extern uint8_t g_ubir_data;
 
-    TM1620_temp[3] = temp / 10000;
-    TM1620_temp[4] = temp % 10000 / 1000;
-    TM1620_temp[5] = temp % 1000 / 100;
-    TM1620_temp[0] = temp % 100 / 10;
-    TM1620_temp[1] = temp % 10;
+    uint8_t temp = g_ubir_data;
+
+    TM1620_temp[3] = temp / 100;
+    TM1620_temp[4] = temp % 100 / 10;
+    TM1620_temp[5] = temp % 10;
+    TM1620_temp[0] = 13;
+    TM1620_temp[1] = 13;
     TM1620_temp[2] = 13;
 
     display_1620();

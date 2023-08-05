@@ -231,30 +231,6 @@ void bsp_voice_plus(void)
     }
 }
 
-void bsp_voice_fast_plus(void)
-{
-    uint8_t temp_buff;
-
-    if ((BitVoiceMute == 0)
-     && (eb_voice_level < VOLUME_MAX_CLASS))
-    {
-        temp_buff = VOLUME_MAX_CLASS - eb_voice_level;
-
-        if (temp_buff >= 10)
-        {
-            eb_voice_level = eb_voice_level + 10;
-        }
-        else
-        {
-            eb_voice_level = eb_voice_level + temp_buff;
-        }
-
-        BitDisplayData_chang = 1;
-        eb_button_change_motor_sta = 1;
-        VarWirtFlashCnt = 0;
-        eBit_DataCharg = 1;
-    }
-}
 
 void bsp_voice_minus(void)
 {
@@ -269,29 +245,6 @@ void bsp_voice_minus(void)
     }
 }
 
-void bsp_voice_fast_minus(void)
-{
-    uint8_t temp_buff;
-    if ((BitVoiceMute == 0)
-     && (eb_voice_level > VOLUME_MIN_CLASS))
-    {
-        temp_buff = eb_voice_level - VOLUME_MIN_CLASS;
-
-        if (temp_buff >= 10)
-        {
-            eb_voice_level = eb_voice_level - 10;
-        }
-        else
-        {
-            eb_voice_level = eb_voice_level - temp_buff;
-        }
-
-        BitDisplayData_chang = 1;
-        eb_button_change_motor_sta = 1;
-        VarWirtFlashCnt = 0;
-        eBit_DataCharg = 1;
-    }
-}
 
 void bsp_voice_reset_customer_setting(void)
 {

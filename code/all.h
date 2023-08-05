@@ -2,7 +2,7 @@
  * @Author: Lkw 1332861164@qq.com
  * @Date: 2023-06-09 23:35:03
  * @LastEditors: Lkw 1332861164@qq.com
- * @LastEditTime: 2023-07-01 14:18:02
+ * @LastEditTime: 2023-08-05 13:57:38
  * @FilePath: \CMS8S6990_6_10\code\all.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -81,7 +81,6 @@ extern void bsp_voice_select_inchannel_plus(void);
 extern void bsp_voice_select_outchannel_down(void);
 extern void bsp_voice_select_outchannel_plus(void);
 extern void bsp_voice_plus(void);
-extern void bsp_voice_fast_plus(void);
 extern void bsp_voice_minus(void);
 extern void bsp_voice_fast_minus(void);
 extern void bsp_voice_reset_customer_setting(void);

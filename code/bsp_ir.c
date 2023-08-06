@@ -2,7 +2,7 @@
  * @Author: Lkw 1332861164@qq.com
  * @Date: 2023-06-09 23:35:03
  * @LastEditors: Lkw 1332861164@qq.com
- * @LastEditTime: 2023-08-05 13:52:48
+ * @LastEditTime: 2023-08-06 22:08:39
  * @FilePath: \CMS8S6990_6_10\code\bsp_ir.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -15,16 +15,16 @@
 
 #define IR_COUNT_INTERRUPT_TIME_BASE 100 //us
 
-#define IR_LONG_PRESS_TIME  2000      // 300ms----->one time: 100us
+#define IR_LONG_PRESS_TIME  3000      // 300ms----->one time: 100us
 
 
 #define IR_REC_INTERVAL_TIME1  60000      // 300ms----->one time: 1us
 
 uint16_t xdata gb_ir_rec_interval_time = 0;
-uint8_t irdata_num      = 0;
-uint8_t irdata_long_num      = 0;
-uint8_t gb_ir_start_flag  = 0;                  //红外接收标志位 
-uint8_t gb_ir_stop_flag  = 0;                  //红外接收标志位
+uint8_t irdata_num          = 0;
+uint8_t irdata_long_num     = 0;
+uint8_t gb_ir_start_flag    = 0;                  //红外接收标志位 
+uint8_t gb_ir_stop_flag     = 0;                  //红外接收标志位
 
 uint8_t g_ubir_data = 0;
 
@@ -82,6 +82,7 @@ void bsp_ir_rec_handle(void)
         && (rec_time1_count < 29000))
         {
             irdata_num = 0;
+            irdata_long_num = 0;
             gb_ir_start_flag = 1;
 
         }
@@ -90,12 +91,12 @@ void bsp_ir_rec_handle(void)
         {
             if (gb_ir_stop_flag == 1)
             {
-                irdata_long_num++;
 
-                if (irdata_long_num % 2 == 0)
+                if (irdata_long_num > 1)
                 {
                     bsp_ir_event_pro(1);
                 }
+                irdata_long_num++;
             }
         }
         else
